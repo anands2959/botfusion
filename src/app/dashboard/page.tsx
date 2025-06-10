@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import AIModelSettings from '@/components/AIModelSettings';
+import ChatbotEditor from '@/components/ChatbotEditor';
+import ApiKeyGenerator from '@/components/ApiKeyGenerator';
 
 // Icons for the sidebar
 const DashboardIcon = () => (
@@ -51,6 +53,10 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [chatbots, setChatbots] = useState([]);
   
   // Redirect if not authenticated and handle tab parameter
   useEffect(() => {
@@ -82,9 +88,27 @@ export default function Dashboard() {
       
       // Fetch complete user data from API
       fetchUserData();
+      // Fetch chatbots data
+      fetchChatbots();
     }
   }, [session]);
   
+  const fetchChatbots = async () => {
+    if (!session?.user) return;
+    
+    try {
+      const response = await fetch('/api/chatbots');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch chatbots');
+      }
+      
+      const data = await response.json();
+      setChatbots(data.chatbots || []);
+    } catch (err) {
+      console.error('Error fetching chatbots:', err);
+    }
+  };
   const fetchUserData = async () => {
     if (!session?.user) return;
     
@@ -99,13 +123,14 @@ export default function Dashboard() {
       }
       
       const data = await response.json();
-      const nameParts = (data.name || '').split(' ');
+      const user = data.user;
+      const nameParts = (user.name || '').split(' ');
       
       setUserData({
         firstName: nameParts[0] || '',
         lastName: nameParts.slice(1).join(' ') || '',
-        email: data.email || '',
-        phone: data.phone || '',
+        email: user.email || '',
+        phone: user.settings?.phone || '',
       });
     } catch (err) {
       console.error('Error fetching user data:', err);
@@ -138,13 +163,20 @@ export default function Dashboard() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update user data');
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update user data');
       }
       
-      // Show success message or notification here
-    } catch (err) {
+      // Show success message
+      setSuccessMessage('Settings saved successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (err: any) {
       console.error('Error updating user data:', err);
-      setError('Failed to save changes. Please try again.');
+      setError(err.message || 'Failed to save changes. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -300,14 +332,14 @@ export default function Dashboard() {
         </nav>
 
         {sidebarOpen && (
-          <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
+          <div className="absolute bottom-0 w-64 p-4 border-t border-gray-300">
             <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-200 flex items-center justify-center text-primary-700 font-semibold">
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-semibold">
                 {session?.user?.name ? session.user.name.substring(0, 2).toUpperCase() : '?'}
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-700">{session?.user?.name || 'User'}</p>
-                <p className="text-xs font-medium text-gray-500">Pro Plan</p>
+                {/* <p className="text-xs font-medium text-gray-500">Pro Plan</p> */}
               </div>
             </div>
           </div>
@@ -487,131 +519,141 @@ export default function Dashboard() {
           {activeTab === 'chatbots' && (
             <div className="bg-white shadow-md rounded-lg p-6 border border-gray-100">
               <h2 className="text-lg font-medium text-gray-900 mb-4">Chatbot Editor</h2>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No chatbot selected</h3>
-                <p className="mt-1 text-sm text-gray-500">Select a chatbot from the list to edit or create a new one.</p>
-                <div className="mt-6">
-                  <button type="button" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Create New Chatbot
-                  </button>
-                </div>
-              </div>
+              <ChatbotEditor />
             </div>
           )}
 
-          {activeTab === 'aimodels' && <AIModelSettings />}
+          {activeTab === 'aimodels' && <AIModelSettings onSettingsSaved={() =>{
+            setSuccessMessage('AI model settings saved successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+          }} />}
 
           {activeTab === 'settings' && (
             <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
               <div className="px-4 py-5 sm:p-6">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">Account Settings</h3>
-                <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>Update your account information and preferences.</p>
+                <div className="mt-5 grid grid-cols-1 gap-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      id="name"
+                      className="mt-1 p-2 text-gray-700 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                      placeholder="Your name"
+                      value={userData?.name || ''}
+                      onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      id="email"
+                      className="mt-1 p-2 text-gray-700 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                      placeholder="you@example.com"
+                      value={userData?.email || ''}
+                     disabled
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      id="phone"
+                      className="mt-1 p-2 text-gray-700 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                      placeholder="+1 (555) 987-6543"
+                      value={userData?.settings?.phone || ''}
+                      onChange={(e) => setUserData({
+                        ...userData,
+                        settings: { ...userData?.settings, phone: e.target.value }
+                      })}
+                    />
+                  </div>
+                  <div className="pt-5">
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSaveSettings}
+                        disabled={isSaving}
+                        className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                
-                {error && (
-                  <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-                    {error}
-                  </div>
-                )}
-                
-                <form className="mt-5 space-y-6" onSubmit={handleSaveSettings}>
-                  <div className="grid grid-cols-6 gap-6">
-                    <div className="col-span-6 sm:col-span-3">
-                      <label htmlFor="first-name" className="block text-sm font-medium text-gray-700">First name</label>
-                      <input 
-                        type="text" 
-                        name="first-name" 
-                        id="first-name" 
-                        value={userData.firstName} 
-                        onChange={(e) => setUserData({...userData, firstName: e.target.value})} 
-                        className="mt-1 block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
-                      />
-                    </div>
-
-                    <div className="col-span-6 sm:col-span-3">
-                      <label htmlFor="last-name" className="block text-sm font-medium text-gray-700">Last name</label>
-                      <input 
-                        type="text" 
-                        name="last-name" 
-                        id="last-name" 
-                        value={userData.lastName} 
-                        onChange={(e) => setUserData({...userData, lastName: e.target.value})} 
-                        className="mt-1 block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
-                      />
-                    </div>
-                    
-                    <div className="col-span-6 sm:col-span-3">
-                      <label htmlFor="email-address" className="block text-sm font-medium text-gray-700">Email address</label>
-                      <input 
-                        type="text" 
-                        disabled 
-                        name="email-address" 
-                        id="email-address" 
-                        value={userData.email} 
-                        className="mt-1 block text-gray-700 w-full border bg-gray-100 border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
-                      />
-                    </div>
-                    <div className="col-span-6 sm:col-span-3">
-                      <label htmlFor="phone-number" className="block text-sm font-medium text-gray-700">Phone Number</label>
-                      <input 
-                        type="tel" 
-                        name="phone-number" 
-                        id="phone-number" 
-                        value={userData.phone} 
-                        onChange={(e) => setUserData({...userData, phone: e.target.value})} 
-                        className="mt-1 block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <button 
-                      type="button" 
-                      onClick={() => fetchUserData()} 
-                      className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={isSaving} 
-                      className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSaving ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                </form>
               </div>
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">API Keys</h3>
+              <div className="px-4 py-5 sm:p-6 border-t border-gray-200">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Chatbot Embed</h3>
                 <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>Manage your API keys for integrating BotFusion with your applications.</p>
+                  <p>Generate an API key and embed script to add your chatbot to any website.</p>
                 </div>
                 <div className="mt-5">
-                  <button type="button" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Generate New API Key
-                  </button>
+                  <ApiKeyGenerator chatbots={chatbots} />
                 </div>
               </div>
-              <div className="px-4 py-5 sm:p-6">
+              <div className="px-4 py-5 sm:p-6 border-t border-gray-200">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Account</h3>
                 <div className="mt-2 max-w-xl text-sm text-gray-500">
                   <p>Permanently delete your account and all of your content.</p>
                 </div>
-                <div className="mt-5">
-                  <button type="button" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                    Delete Account
-                  </button>
-                </div>
+                
+                {!showDeleteConfirm ? (
+                  <div className="mt-5">
+                    <button 
+                      type="button" 
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      Delete Account
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-5 bg-red-50 p-4 rounded-md">
+                    <p className="text-sm text-red-700 mb-4">Are you sure you want to delete your account? This action cannot be undone.</p>
+                    <div className="flex space-x-3">
+                      <button 
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={async () => {
+                          setIsDeleting(true);
+                          try {
+                            const response = await fetch('/api/user', {
+                              method: 'DELETE',
+                            });
+                            
+                            if (!response.ok) {
+                              throw new Error('Failed to delete account');
+                            }
+                            
+                            // Sign out and redirect to home page
+                            await signOut({ redirect: false });
+                            router.push('/');
+                          } catch (err) {
+                            console.error('Error deleting account:', err);
+                            setError('Failed to delete account. Please try again.');
+                            setShowDeleteConfirm(false);
+                          } finally {
+                            setIsDeleting(false);
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDeleting ? 'Deleting...' : 'Yes, Delete Account'}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

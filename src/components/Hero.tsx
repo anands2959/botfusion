@@ -36,7 +36,7 @@ export default function Hero() {
                 </div>
                 <div className="mt-3 sm:mt-0 sm:ml-3">
                   <Link
-                    href="https://github.com/botfusion/botfusion"
+                    href="https://github.com/anands2959/botfusion"
                     className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-blue-600 bg-white hover:bg-gray-50 border-blue-100 md:py-4 md:text-lg md:px-10 transition-colors"
                   >
                     GitHub

@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   settings      Settings?
   otpCode       OtpCode?
+  chatbots      Chatbot[]
 }
 
 model Account {
@@ -81,4 +82,32 @@ model Settings {
   llamaApiKey       String?
   phone             String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Chatbot {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  welcomeMessage String           @default("Hello! How can I help you today?")
+  logoUrl        String?
+  colorScheme    String           @default("#4F46E5")
+  widgetPosition String           @default("bottom-right")
+  apiKey         String?          @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userId         String           @db.ObjectId
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingSources TrainingSource[]
+}
+
+model TrainingSource {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String   // "website" or "pdf"
+  url       String?
+  filename  String?
+  status    String   @default("pending") // pending, processing, completed, failed
+  progress  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chatbotId String   @db.ObjectId
+  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
 }

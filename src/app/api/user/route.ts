@@ -165,3 +165,66 @@ export async function PUT(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete user's settings
+    await prisma.settings.deleteMany({
+      where: { userId },
+    });
+
+    // Delete user's sessions
+    await prisma.session.deleteMany({
+      where: { userId },
+    });
+
+    // Delete user's accounts (OAuth connections)
+    await prisma.account.deleteMany({
+      where: { userId },
+    });
+
+    // Delete user's OTP codes
+    await prisma.otpCode.deleteMany({
+      where: { userId },
+    });
+
+    // Finally delete the user
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json(
+      { message: 'Account deleted successfully' },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return NextResponse.json(
+      { error: 'An error occurred while deleting your account' },
+      { status: 500 }
+    );
+  }
+}

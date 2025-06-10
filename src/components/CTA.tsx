@@ -19,7 +19,7 @@ export default function CTA() {
           </div>
           <div className="ml-3 inline-flex rounded-md shadow">
             <Link
-              href="https://github.com/botfusion/botfusion"
+              href="https://github.com/anands2959/botfusion"
               className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 transition-colors"
             >
               View on GitHub
