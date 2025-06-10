@@ -1,37 +1,32 @@
-import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
-import "./globals.css";
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter, Poppins } from 'next/font/google';
+import AuthContext from '@/context/AuthContext';
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const poppins = Poppins({
-  variable: "--font-poppins",
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-  display: "swap",
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
 });
 
 export const metadata: Metadata = {
-  title: "BotFusion | Transform Your Website Into an AI Chatbot",
-  description: "Create intelligent chatbots from your website content or PDF documents in minutes. Enhance customer engagement with BotFusion's AI-powered chat solution.",
-  keywords: "AI chatbot, website chatbot, PDF chatbot, customer support, conversational AI, chatbot builder",
+  title: 'BotFusion - Transform Website Content into an Intelligent Chatbot',
+  description: 'BotFusion helps you create AI-powered chatbots from your website content with just a few clicks. Enhance customer support and engagement.',
+  keywords: 'chatbot, AI, website integration, customer support, conversational AI',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} ${poppins.variable} antialiased`}
-      >
-        {children}
+      <body className={`${inter.variable} ${poppins.variable} font-sans`}>
+        <AuthContext>
+          {children}
+        </AuthContext>
       </body>
     </html>
   );
