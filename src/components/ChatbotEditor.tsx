@@ -210,8 +210,8 @@ export default function ChatbotEditor() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Chatbot Editor</h2>
+    <div className="bg-white rounded-lg p-4">
+      {/* <h2 className="text-xl font-semibold text-gray-900 mb-6">Chatbot Editor</h2> */}
       
       {/* Error and success messages */}
       {error && (
@@ -329,7 +329,7 @@ export default function ChatbotEditor() {
                     value={welcomeMessage}
                     onChange={(e) => setWelcomeMessage(e.target.value || 'Hi there! How can I help you today?')}
                     rows={3}
-                    className="mt-1 block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 resize-none block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Hi there! How can I help you today?"
                     required
                   />
@@ -565,9 +565,9 @@ export default function ChatbotEditor() {
                           style={{ backgroundColor: colorScheme }}
                           disabled
                         >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
+                           <svg className="h-5 w-5 rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
                         </button>
                       </div>
                     </div>

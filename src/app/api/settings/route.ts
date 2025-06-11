@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       const settings = await prisma.settings.create({
         data: {
           userId,
-          defaultAIModel: 'gpt-3.5-turbo',
+          defaultAIModel: 'chatgpt-free',
         },
       });
 

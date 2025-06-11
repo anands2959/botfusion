@@ -111,9 +111,14 @@ export async function extractContent(url: string): Promise<string> {
  * Crawls a website starting from a URL and extracts content from all pages
  * @param startUrl The URL to start crawling from
  * @param maxPages Maximum number of pages to crawl
+ * @param progressCallback Optional callback function to report progress during crawling
  * @returns Object containing all extracted content and visited URLs
  */
-export async function crawlWebsite(startUrl: string, maxPages: number = 10): Promise<{ content: string, urls: string[] }> {
+export async function crawlWebsite(
+  startUrl: string, 
+  maxPages: number = 10, 
+  progressCallback?: (progress: number, currentUrl: string) => Promise<void>
+): Promise<{ content: string, urls: string[] }> {
   const visited: Set<string> = new Set();
   const queue: string[] = [startUrl];
   let content = '';
@@ -132,6 +137,12 @@ export async function crawlWebsite(startUrl: string, maxPages: number = 10): Pro
     console.log(`Crawling: ${currentUrl}`);
     visited.add(currentUrl);
     
+    // Calculate and report progress
+    const progress = Math.round((visited.size / maxPages) * 100); // Remove the 90% cap
+    if (progressCallback) {
+      await progressCallback(progress, currentUrl);
+    }
+    
     try {
       // Extract content from the current page
       const pageContent = await extractContent(currentUrl);
@@ -149,6 +160,11 @@ export async function crawlWebsite(startUrl: string, maxPages: number = 10): Pro
     } catch (error) {
       console.error(`Error processing ${currentUrl}:`, error);
     }
+  }
+  
+  // Final progress update (100%)
+  if (progressCallback) {
+    await progressCallback(100, 'Crawling completed');
   }
   
   return {

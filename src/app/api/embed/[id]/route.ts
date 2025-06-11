@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma';
 // Get chatbot configuration for embedding
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const apiKey = params.id;
+    // In Next.js 15, params is a Promise that needs to be awaited
+    const { id: apiKey } = await params;
 
     // Find chatbot by API key
     const chatbot = await prisma.chatbot.findUnique({

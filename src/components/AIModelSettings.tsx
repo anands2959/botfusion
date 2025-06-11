@@ -26,8 +26,7 @@ export default function AIModelSettings() {
     openai: '',
     anthropic: '',
     google: '',
-    mistral: '',
-    llama: ''
+    deepseek: ''
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,54 +37,51 @@ export default function AIModelSettings() {
   const [activeTab, setActiveTab] = useState<'models' | 'training'>('models');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [isTraining, setIsTraining] = useState(false);
+  const [isAddingWebsite, setIsAddingWebsite] = useState(false);
   const [trainingSources, setTrainingSources] = useState<TrainingSource[]>([]);
+  const [expandedSources, setExpandedSources] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedChatbot, setSelectedChatbot] = useState<string>('');
   const [chatbots, setChatbots] = useState<any[]>([]);
   const [isLoadingChatbots, setIsLoadingChatbots] = useState(false);
 
+  // Toggle source details visibility
+  const toggleSourceDetails = (sourceId: string) => {
+    setExpandedSources(prev => 
+      prev.includes(sourceId) 
+        ? prev.filter(id => id !== sourceId) 
+        : [...prev, sourceId]
+    );
+  };
+
   // List of available AI models
   const availableModels: AIModel[] = [
     {
-      id: 'gpt-3.5-turbo',
-      name: 'GPT-3.5',
+      id: 'chatgpt-free',
+      name: 'ChatGPT Free',
       provider: 'openai',
-      description: 'Good balance of capability and cost',
+      description: 'Free version of OpenAI\'s ChatGPT model',
       apiKeyRequired: true
     },
     {
-      id: 'gpt-4',
-      name: 'GPT-4',
-      provider: 'openai',
-      description: 'Most capable OpenAI model',
+      id: 'deepseek-free',
+      name: 'DeepSeek Free',
+      provider: 'deepseek',
+      description: 'Free version of DeepSeek AI model',
       apiKeyRequired: true
     },
     {
-      id: 'claude-2',
-      name: 'Claude 2',
-      provider: 'anthropic',
-      description: 'Anthropic\'s advanced AI assistant',
-      apiKeyRequired: true
-    },
-    {
-      id: 'gemini-pro',
-      name: 'Gemini Pro',
+      id: 'gemini-free',
+      name: 'Gemini Free',
       provider: 'google',
-      description: 'Google\'s advanced AI model',
+      description: 'Free version of Google\'s Gemini AI model',
       apiKeyRequired: true
     },
     {
-      id: 'mistral-medium',
-      name: 'Mistral Medium',
-      provider: 'mistral',
-      description: 'Balanced performance from Mistral AI',
-      apiKeyRequired: true
-    },
-    {
-      id: 'llama-2',
-      name: 'Llama 2',
-      provider: 'llama',
-      description: 'Open source model from Meta',
+      id: 'claude-free',
+      name: 'Claude Free',
+      provider: 'anthropic',
+      description: 'Free version of Anthropic\'s Claude AI model',
       apiKeyRequired: true
     }
   ];
@@ -112,13 +108,12 @@ export default function AIModelSettings() {
         
         const data = await response.json();
         if (data.settings) {
-          setSelectedModel(data.settings.defaultAIModel || 'gpt-3.5-turbo');
+          setSelectedModel(data.settings.defaultAIModel || 'chatgpt-free');
           setApiKeys({
             openai: data.settings.openaiApiKey || '',
             anthropic: data.settings.anthropicApiKey || '',
             google: data.settings.googleApiKey || '',
-            mistral: data.settings.mistralApiKey || '',
-            llama: data.settings.llamaApiKey || ''
+            deepseek: data.settings.deepseekApiKey || ''
           });
         }
       } catch (err) {
@@ -147,7 +142,7 @@ export default function AIModelSettings() {
         if (data.chatbots && data.chatbots.length > 0) {
           setSelectedChatbot(data.chatbots[0].id);
           // Fetch training sources for the selected chatbot
-          fetchTrainingSources(data.chatbots[0].id);
+          await fetchTrainingSources(data.chatbots[0].id);
         }
       } catch (err) {
         console.error('Error fetching chatbots:', err);
@@ -164,24 +159,28 @@ export default function AIModelSettings() {
 
   // Fetch training sources for a chatbot
   const fetchTrainingSources = async (chatbotId: string) => {
-    if (!chatbotId) return;
+    if (!chatbotId) return [];
     
     try {
       const response = await fetch(`/api/chatbots/${chatbotId}/train`);
       if (!response.ok) throw new Error('Failed to fetch training sources');
       
       const data = await response.json();
-      setTrainingSources(data.trainingSources || []);
+      const sources = data.trainingSources || [];
+      setTrainingSources(sources);
+      return sources;
     } catch (err) {
       console.error('Error fetching training sources:', err);
       setError('Failed to load training sources. Please try again.');
+      return [];
     }
   };
 
   // Handle chatbot selection change
-  const handleChatbotChange = (chatbotId: string) => {
+  const handleChatbotChange = async (chatbotId: string) => {
     setSelectedChatbot(chatbotId);
-    fetchTrainingSources(chatbotId);
+    setError(''); // Clear any previous errors
+    await fetchTrainingSources(chatbotId);
   };
 
   // Save settings
@@ -201,8 +200,7 @@ export default function AIModelSettings() {
           openaiApiKey: apiKeys.openai,
           anthropicApiKey: apiKeys.anthropic,
           googleApiKey: apiKeys.google,
-          mistralApiKey: apiKeys.mistral,
-          llamaApiKey: apiKeys.llama
+          deepseekApiKey: apiKeys.deepseek
         })
       });
 
@@ -227,7 +225,19 @@ export default function AIModelSettings() {
       setError('Please enter a valid website URL and select a chatbot');
       return;
     }
-
+    
+    // Basic URL validation
+    try {
+      new URL(websiteUrl);
+    } catch (e) {
+      setError('Please enter a valid URL (including http:// or https://)');
+      return;
+    }
+    
+    setIsAddingWebsite(true);
+    setError('');
+    setSuccessMessage('Adding website for training...');
+    
     try {
       const response = await fetch(`/api/chatbots/${selectedChatbot}/train`, {
         method: 'POST',
@@ -246,13 +256,57 @@ export default function AIModelSettings() {
       }
 
       const data = await response.json();
+      const addedSourceUrl = websiteUrl; // Store URL for later reference
+      // Update the training sources state with the new source
       setTrainingSources(prev => [data.trainingSource, ...prev]);
       setWebsiteUrl('');
-      setSuccessMessage('Website added successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessMessage('Website added successfully! The crawler will begin extracting content shortly.');
+      
+      // Set up polling to show progress updates during crawling
+      const pollInterval = setInterval(async () => {
+        const updatedSources = await fetchTrainingSources(selectedChatbot);
+        
+        // Find the source we just added
+        const addedSource = updatedSources.find(source => 
+          source.type === 'website' && source.url === addedSourceUrl
+        );
+        
+        if (addedSource) {
+          // Update progress message based on current status
+          if (addedSource.status === 'processing') {
+            if (addedSource.filename) {
+              setSuccessMessage(`Extracting content: ${addedSource.filename} (${addedSource.progress}% complete)`);
+            } else {
+              setSuccessMessage(`Extracting content from website (${addedSource.progress}% complete)`);
+            }
+          }
+          
+          // If source is completed or failed, stop polling
+          if (addedSource.status === 'completed' || addedSource.status === 'failed') {
+            clearInterval(pollInterval);
+            
+            if (addedSource.status === 'completed') {
+              setSuccessMessage('Website content extracted successfully! Click "Start Training" to process with your selected AI model.');
+              setTimeout(() => setSuccessMessage(''), 5000);
+            } else {
+              setError(`Failed to extract content from ${addedSourceUrl}. Please check the URL and try again.`);
+            }
+          }
+        }
+      }, 2000); // Poll every 2 seconds for responsive updates
+      
+      // Safety timeout after 2 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+      }, 120000);
+      
+      // Refresh the training sources to ensure we have the latest data
+      await fetchTrainingSources(selectedChatbot);
     } catch (err :any) {
       console.error('Error adding website:', err);
       setError(err.message || 'Failed to add website. Please try again.');
+    } finally {
+      setIsAddingWebsite(false);
     }
   };
 
@@ -270,6 +324,9 @@ export default function AIModelSettings() {
 
     const formData = new FormData();
     formData.append('file', file);
+    setIsAddingWebsite(true); // Use existing state variable for loading indicator
+    setError('');
+    setSuccessMessage(`Uploading ${file.name}...`);
 
     try {
       const response = await fetch(`/api/chatbots/${selectedChatbot}/upload`, {
@@ -283,34 +340,85 @@ export default function AIModelSettings() {
       }
 
       const data = await response.json();
+      const uploadedFileName = file.name; // Store filename for later reference
+      // Update the training sources state with the new source
       setTrainingSources(prev => [data.trainingSource, ...prev]);
-      setSuccessMessage('File uploaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessMessage(`PDF ${uploadedFileName} uploaded successfully! Processing will begin shortly.`);
       
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      
+      // Set up polling to show progress updates during PDF processing
+      const pollInterval = setInterval(async () => {
+        const updatedSources = await fetchTrainingSources(selectedChatbot);
+        
+        // Find the source we just added (match by filename)
+        const addedSource = updatedSources.find(source => 
+          source.type === 'pdf' && source.filename && source.filename.includes(uploadedFileName)
+        );
+        
+        if (addedSource) {
+          // Update progress message based on current status
+          if (addedSource.status === 'processing') {
+            setSuccessMessage(`Processing PDF: ${uploadedFileName} (${addedSource.progress}% complete)`);
+          }
+          
+          // If source is completed or failed, stop polling
+          if (addedSource.status === 'completed' || addedSource.status === 'failed') {
+            clearInterval(pollInterval);
+            
+            if (addedSource.status === 'completed') {
+              setSuccessMessage(`PDF ${uploadedFileName} processed successfully! Click "Start Training" to process with your selected AI model.`);
+              setTimeout(() => setSuccessMessage(''), 5000);
+            } else {
+              setError(`Failed to process PDF ${uploadedFileName}. Please check the file and try again.`);
+            }
+          }
+        }
+      }, 2000); // Poll every 2 seconds for responsive updates
+      
+      // Safety timeout after 2 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+      }, 120000);
+      
+      // Refresh the training sources to ensure we have the latest data
+      await fetchTrainingSources(selectedChatbot);
     } catch (err :any) {
       console.error('Error uploading file:', err);
       setError(err.message || 'Failed to upload file. Please try again.');
+    } finally {
+      setIsAddingWebsite(false); // Use existing state variable for loading indicator
     }
   };
 
   // Start training process
   const handleStartTraining = async () => {
     if (!selectedChatbot) {
-      setError('Please select a chatbot');
+      setError('Please select a chatbot to train');
       return;
     }
     
-    if (trainingSources.length === 0) {
+    // Fetch the latest training sources first
+    const currentSources = await fetchTrainingSources(selectedChatbot);
+    
+    if (currentSources.length === 0) {
       setError('Please add at least one website or PDF document for training');
+      return;
+    }
+    
+    // Check if there are any pending or processing sources to train
+    const pendingSources = currentSources.filter(source => source.status === 'pending' || source.status === 'processing');
+    if (pendingSources.length === 0) {
+      setError('No sources available for training. Please add new sources or check if all sources are already completed.');
       return;
     }
     
     setIsTraining(true);
     setError('');
+    setSuccessMessage('Initializing training process...');
     
     try {
       const response = await fetch(`/api/chatbots/${selectedChatbot}/train`, {
@@ -322,30 +430,60 @@ export default function AIModelSettings() {
         throw new Error(errorData.error || 'Failed to start training');
       }
 
-      setSuccessMessage('Training process started!');
+      setSuccessMessage('Training process started! Crawling websites and processing documents...');
       
-      // Poll for updates
+      // Poll for updates more frequently during active training
       const pollInterval = setInterval(async () => {
-        await fetchTrainingSources(selectedChatbot);
+        const updatedSources = await fetchTrainingSources(selectedChatbot);
+        
+        // Calculate overall progress
+        const totalProgress = updatedSources.reduce((sum, source) => sum + source.progress, 0) / updatedSources.length;
+        
+        // Update success message based on progress
+        if (totalProgress < 30) {
+          setSuccessMessage(`Training in progress: Initializing content extraction (${Math.round(totalProgress)}%)`);
+        } else if (totalProgress < 70) {
+          setSuccessMessage(`Training in progress: Extracting content from sources (${Math.round(totalProgress)}%)`);
+        } else if (totalProgress < 90) {
+          setSuccessMessage(`Training in progress: Processing content (${Math.round(totalProgress)}%)`);
+        } else if (totalProgress < 100) {
+          setSuccessMessage(`Training in progress: Generating AI model embeddings (${Math.round(totalProgress)}%)`);
+        }
         
         // Check if all sources are completed or failed
-        const allDone = trainingSources.every(source => 
+        const allDone = updatedSources.every(source => 
           source.status === 'completed' || source.status === 'failed'
         );
         
         if (allDone) {
           clearInterval(pollInterval);
           setIsTraining(false);
-          setSuccessMessage('AI model trained successfully with your content!');
-          setTimeout(() => setSuccessMessage(''), 3000);
+          
+          // Count completed and failed sources
+          const completedCount = updatedSources.filter(source => source.status === 'completed').length;
+          const failedCount = updatedSources.filter(source => source.status === 'failed').length;
+          
+          if (failedCount === 0) {
+            setSuccessMessage(`AI model trained successfully with your content! ${completedCount} source(s) processed.`);
+          } else if (completedCount === 0) {
+            setError(`Training failed for all ${failedCount} source(s). Please check your content and try again.`);
+            setSuccessMessage('');
+          } else {
+            setSuccessMessage(`AI model training completed with mixed results: ${completedCount} source(s) successful, ${failedCount} source(s) failed.`);
+          }
+          
+          // Clear success message after a delay
+          setTimeout(() => setSuccessMessage(''), 5000);
         }
-      }, 5000);
+      }, 3000); // Poll every 3 seconds for more responsive updates
       
-      // Stop polling after 2 minutes as a safety measure
+      // Stop polling after 5 minutes as a safety measure
       setTimeout(() => {
         clearInterval(pollInterval);
         setIsTraining(false);
-      }, 120000);
+        setSuccessMessage('');
+        setError('Training process timed out. Please check your sources and try again if needed.');
+      }, 300000); // 5 minutes timeout
       
     } catch (err :any) {
       console.error('Error starting training:', err);
@@ -356,13 +494,32 @@ export default function AIModelSettings() {
 
   // Remove training source
   const handleRemoveSource = async (sourceId: string) => {
+    if (!selectedChatbot) return;
+    
     try {
+      // Update the UI immediately for better user experience
       setTrainingSources(prev => prev.filter(source => source.id !== sourceId));
+      
+      // Make an API call to remove the source from the database
+      const response = await fetch(`/api/chatbots/${selectedChatbot}/train/${sourceId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete training source');
+      }
+      
       setSuccessMessage('Source removed successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
+      
+      // Refresh the training sources to ensure we have the latest data
+      await fetchTrainingSources(selectedChatbot);
+    } catch (err: any) {
       console.error('Error removing source:', err);
-      setError('Failed to remove source. Please try again.');
+      setError(err.message || 'Failed to remove source. Please try again.');
+      // Refresh the training sources to ensure UI is in sync with the database
+      await fetchTrainingSources(selectedChatbot);
     }
   };
 
@@ -486,32 +643,18 @@ export default function AIModelSettings() {
                   </div>
 
                   <div>
-                    <label htmlFor="mistral-key" className="block text-sm font-medium text-gray-700 mb-1">
-                      Mistral API Key
-                    </label>
-                    <input
-                      type="password"
-                      id="mistral-key"
-                      value={apiKeys.mistral}
-                      onChange={(e) => handleApiKeyChange('mistral', e.target.value)}
-                      className="w-full text-gray-700 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="..."
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="llama-key" className="block text-sm font-medium text-gray-700 mb-1">
-                      Llama API Key
-                    </label>
-                    <input
-                      type="password"
-                      id="llama-key"
-                      value={apiKeys.llama}
-                      onChange={(e) => handleApiKeyChange('llama', e.target.value)}
-                      className="w-full text-gray-700 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="..."
-                    />
-                  </div>
+                  <label htmlFor="deepseek-key" className="block text-sm font-medium text-gray-700 mb-1">
+                    DeepSeek API Key
+                  </label>
+                  <input
+                    type="password"
+                    id="deepseek-key"
+                    value={apiKeys.deepseek}
+                    onChange={(e) => handleApiKeyChange('deepseek', e.target.value)}
+                    className="w-full text-gray-700 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="..."
+                  />
+                </div>
                 </div>
               </div>
 
@@ -633,7 +776,8 @@ export default function AIModelSettings() {
                                 {source.type === 'website' ? '🌐 Website' : '📄 PDF'}: {source.type === 'website' ? source.url : source.filename}
                               </div>
                               <div className="flex items-center mt-1">
-                                <span className={`text-xs px-2 py-1 rounded-full ${{
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  {
                                   'pending': 'bg-yellow-100 text-yellow-800',
                                   'processing': 'bg-blue-100 text-blue-800',
                                   'completed': 'bg-green-100 text-green-800',
@@ -641,6 +785,14 @@ export default function AIModelSettings() {
                                 }[source.status]}`}>
                                   {source.status.charAt(0).toUpperCase() + source.status.slice(1)}
                                 </span>
+                                {source.status === 'completed' && (
+                                  <button 
+                                    onClick={() => toggleSourceDetails(source.id)}
+                                    className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                                  >
+                                    {expandedSources.includes(source.id) ? 'Hide Details' : 'Show Details'}
+                                  </button>
+                                )}
                               </div>
                             </div>
                             <button
@@ -663,7 +815,29 @@ export default function AIModelSettings() {
                                 style={{ width: `${source.progress}%` }}
                               ></div>
                             </div>
+                            {source.filename && source.status === 'processing' && (
+                              <div className="mt-1 text-xs text-gray-500">{source.filename}</div>
+                            )}
                           </div>
+                          
+                          {/* Show extracted data for completed sources */}
+                          {source.status === 'completed' && expandedSources.includes(source.id) && (
+                            <div className="mt-3 p-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                              <h5 className="font-medium mb-1">Training Details:</h5>
+                              <p className="text-gray-700 mb-2">{source.filename || source.url}</p>
+                              {source.type === 'website' && source.url && (
+                                <div>
+                                  <p className="text-gray-600 text-xs mb-1">Extracted from website:</p>
+                                  <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
+                                    {source.url}
+                                  </a>
+                                </div>
+                              )}
+                              {source.type === 'pdf' && source.filename && (
+                                <p className="text-gray-600 text-xs">Extracted from PDF: {source.filename}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

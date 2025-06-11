@@ -17,7 +17,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const userId = session.user.id;
-    const chatbotId = params.id;
+    // In Next.js 15, params is a Promise that needs to be awaited
+    const { id: chatbotId } = await params;
 
     // Check if chatbot exists and belongs to the user
     const chatbot = await prisma.chatbot.findUnique({

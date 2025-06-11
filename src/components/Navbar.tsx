@@ -37,10 +37,10 @@ export default function Navbar() {
       {/* CTA Buttons */}
       <div className="hidden md:flex items-center space-x-4">
         <Link 
-          href="/login" 
+          href="/signin" 
           className="px-4 py-2 text-gray-700 font-medium hover:text-blue-600 transition-colors"
         >
-          Log in
+          Sign In
         </Link>
         <Link 
           href="/signup" 
@@ -115,11 +115,11 @@ export default function Navbar() {
             </Link>
             <div className="pt-2 flex flex-col space-y-3">
               <Link 
-                href="/login" 
+                href="/signin" 
                 className="px-4 py-2 text-center text-gray-700 font-medium border border-gray-300 rounded-full hover:text-blue-600 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Log in
+                Sign In
               </Link>
               <Link 
                 href="/signup" 

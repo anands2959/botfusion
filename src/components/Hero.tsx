@@ -69,9 +69,9 @@ export default function Hero() {
                     <div className="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
                   </div>
-                  
+
                   {/* Chatbot UI */}
-                  <div className="absolute bottom-4 right-4 w-64 h-80 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                  <div className="absolute bottom-4 right-4 w-64 h-85 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
                     <div className="h-10 bg-blue-600 flex items-center justify-between px-4">
                       <span className="text-white text-sm font-medium">BotFusion Assistant</span>
                       <button className="text-white">
@@ -94,7 +94,14 @@ export default function Hero() {
                       </div>
                     </div>
                     <div className="h-10 border-t border-gray-200 flex items-center px-3">
-                      <input type="text" className="w-full h-8 bg-gray-100 rounded-full px-3 text-sm" placeholder="Type your message..." disabled />
+                      <input type="text" className="w-full text-gray-600 h-8 bg-gray-100 rounded-full px-3 text-sm" placeholder="Type your message..." disabled />
+                      <button
+                        className="ml-3 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <svg className="h-3 w-3 rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>

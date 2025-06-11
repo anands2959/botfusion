@@ -6,9 +6,9 @@ export default function Demo() {
   const [messages, setMessages] = useState([
     { sender: 'bot', text: 'Hello! I\'m the BotFusion demo assistant. How can I help you today?' },
   ]);
-  
+
   const [inputValue, setInputValue] = useState('');
-  
+
   // Demo responses for specific questions
   const demoResponses: Record<string, string> = {
     'pricing': 'BotFusion is an open-source platform that you can use for free. You only need to provide your own AI model API keys to use the service.',
@@ -18,19 +18,19 @@ export default function Demo() {
     'customize': 'You can customize your chatbot\'s appearance including colors, icon, position, size, and behavior to match your brand perfectly.',
     'free plan': 'The Free plan includes basic chatbot functionality, up to 100 monthly conversations, website URL integration, standard appearance options, and email support.',
   };
-  
+
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
-    
+
     // Add user message
     const newMessages = [...messages, { sender: 'user', text: inputValue }];
     setMessages(newMessages);
     setInputValue('');
-    
+
     // Simulate bot response after a short delay
     setTimeout(() => {
       let botResponse = 'I\'m sorry, but I\'m just a demo. In the real BotFusion chatbot, I would provide an accurate answer based on your website content.';
-      
+
       // Check for keywords in the user's message to provide relevant demo responses
       const lowercaseInput = inputValue.toLowerCase();
       for (const [keyword, response] of Object.entries(demoResponses)) {
@@ -39,11 +39,11 @@ export default function Demo() {
           break;
         }
       }
-      
+
       setMessages(prev => [...prev, { sender: 'bot', text: botResponse }]);
     }, 1000);
   };
-  
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSendMessage();
@@ -118,11 +118,11 @@ export default function Demo() {
               <div className="h-96 overflow-y-auto p-4 bg-gray-50">
                 <div className="space-y-4">
                   {messages.map((message, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div 
+                      <div
                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-white border border-gray-200 text-gray-800'}`}
                       >
                         {message.text}
@@ -145,7 +145,7 @@ export default function Demo() {
                   onClick={handleSendMessage}
                   className="ml-3 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-6 rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                   </svg>
                 </button>

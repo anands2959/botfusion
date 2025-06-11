@@ -41,14 +41,13 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'system', content: 'Welcome to BotFusion! How can I help you today?' },
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [userData, setUserData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
-    phone: '',
+    settings: {
+      phone: ''
+    }
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,7 +56,19 @@ export default function Dashboard() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [chatbots, setChatbots] = useState([]);
-  
+  const [selectedChatbotId, setSelectedChatbotId] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
   // Redirect if not authenticated and handle tab parameter
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -71,66 +82,74 @@ export default function Dashboard() {
       }
     }
   }, [status, router]);
-  
+
   // Fetch user data when session is available
   useEffect(() => {
     if (session?.user) {
       // Initialize with session data
-      const name = session.user.name || '';
-      const nameParts = name.split(' ');
-      
       setUserData({
-        firstName: nameParts[0] || '',
-        lastName: nameParts.slice(1).join(' ') || '',
+        name: session.user.name || '',
         email: session.user.email || '',
-        phone: '',
+        settings: {
+          phone: ''
+        }
       });
-      
+
       // Fetch complete user data from API
       fetchUserData();
       // Fetch chatbots data
       fetchChatbots();
     }
   }, [session]);
-  
+
   const fetchChatbots = async () => {
     if (!session?.user) return;
-    
+
     try {
       const response = await fetch('/api/chatbots');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch chatbots');
       }
-      
+
       const data = await response.json();
       setChatbots(data.chatbots || []);
+      
+      // Set the first chatbot as selected if available and has API key
+      if (data.chatbots && data.chatbots.length > 0) {
+        const chatbotsWithApiKey = data.chatbots.filter(bot => bot.apiKey);
+        if (chatbotsWithApiKey.length > 0) {
+          setSelectedChatbotId(chatbotsWithApiKey[0].id);
+        } else if (data.chatbots.length > 0) {
+          setSelectedChatbotId(data.chatbots[0].id);
+        }
+      }
     } catch (err) {
       console.error('Error fetching chatbots:', err);
     }
   };
   const fetchUserData = async () => {
     if (!session?.user) return;
-    
+
     setIsLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/user');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch user data');
       }
-      
+
       const data = await response.json();
       const user = data.user;
-      const nameParts = (user.name || '').split(' ');
-      
+
       setUserData({
-        firstName: nameParts[0] || '',
-        lastName: nameParts.slice(1).join(' ') || '',
+        name: user.name || '',
         email: user.email || '',
-        phone: user.settings?.phone || '',
+        settings: {
+          phone: user.settings?.phone || ''
+        }
       });
     } catch (err) {
       console.error('Error fetching user data:', err);
@@ -139,17 +158,17 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-  
+
   const handleLogout = async () => {
     await signOut({ redirect: false });
     router.push('/');
   };
-  
-  const handleSaveSettings = async (e:any) => {
+
+  const handleSaveSettings = async (e: any) => {
     e.preventDefault();
     setIsSaving(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/user', {
         method: 'PUT',
@@ -157,19 +176,19 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: `${userData.firstName} ${userData.lastName}`.trim(),
-          phone: userData.phone,
+          name: userData.name,
+          phone: userData.settings.phone,
         }),
       });
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to update user data');
       }
-      
+
       // Show success message
       setSuccessMessage('Settings saved successfully!');
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
@@ -181,7 +200,7 @@ export default function Dashboard() {
       setIsSaving(false);
     }
   };
-  
+
   // If loading session or not authenticated yet, show loading state
   if (status === 'loading' || status === 'unauthenticated') {
     return (
@@ -195,65 +214,377 @@ export default function Dashboard() {
   }
 
   // Function to handle chat submission
-  const handleChatSubmit = (e:any) => {
+  const handleChatSubmit = async (e: any) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
-    // Add user message
-    setChatMessages([...chatMessages, { role: 'user', content: chatInput }]);
+    // Add user message to chat
+    const newMessages = [
+      ...chatMessages,
+      { role: 'user', content: chatInput },
+    ];
+    setChatMessages(newMessages);
     
-    // Simulate bot response based on input
-    setTimeout(() => {
-      let botResponse = "I'm sorry, I don't have an answer for that yet. Our team is constantly improving my knowledge base.";
-      
-      // Simple response logic based on keywords
-      const input = chatInput.toLowerCase();
-      if (input.includes('pricing') || input.includes('plan') || input.includes('cost')) {
-        botResponse = "We offer flexible pricing plans starting with a free tier. Our Pro plan is $29/month and includes 5 chatbots and 5,000 messages. For enterprise needs, our Business plan at $99/month offers unlimited chatbots.";
-      } else if (input.includes('integrate') || input.includes('website') || input.includes('add')) {
-        botResponse = "Integrating BotFusion with your website is simple! Just add our JavaScript snippet to your site, and your AI chatbot will be live. You can customize its appearance and behavior from your dashboard.";
-      } else if (input.includes('customize') || input.includes('style') || input.includes('design')) {
-        botResponse = "You can fully customize your chatbot's appearance to match your brand. Change colors, fonts, position, and even the chat bubble icon. All customizations can be done through our user-friendly interface without coding.";
-      } else if (input.includes('hello') || input.includes('hi') || input.includes('hey')) {
-        botResponse = "Hello! I'm your BotFusion assistant. I can help answer questions about our platform, pricing, integration, and more. What would you like to know?";
-      } else if (input.includes('feature') || input.includes('capability')) {
-        botResponse = "BotFusion offers powerful features including website and PDF analysis, custom styling, one-line integration, and detailed analytics. Our AI understands context and can provide accurate responses to your visitors' questions.";
-      }
-      
-      setChatMessages(prev => [...prev, { role: 'system', content: botResponse }]);
-    }, 1000);
-    
-    // Clear input
+    const userMessage = chatInput;
     setChatInput('');
+
+    // Get the selected chatbot
+    const selectedChatbot = chatbots.find(bot => bot.id === selectedChatbotId);
+    if (!selectedChatbot || !selectedChatbot.apiKey) {
+      // Add error message if no chatbot is selected or it has no API key
+      setChatMessages([
+        ...newMessages,
+        { role: 'system', content: 'Error: No chatbot selected or chatbot has no API key. Please generate an API key for this chatbot first.' },
+      ]);
+      return;
+    }
+
+    try {
+      // Show typing indicator
+      setChatMessages([
+        ...newMessages,
+        { role: 'system', content: '...', isTyping: true },
+      ]);
+
+      // Call the actual chatbot API
+      const response = await fetch(`/api/embed/${selectedChatbot.apiKey}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from chatbot');
+      }
+
+      const data = await response.json();
+      
+      // Replace typing indicator with actual response
+      setChatMessages([
+        ...newMessages,
+        { role: 'system', content: data.response },
+      ]);
+    } catch (error) {
+      console.error('Error getting chatbot response:', error);
+      // Replace typing indicator with error message
+      setChatMessages([
+        ...newMessages,
+        { role: 'system', content: 'Sorry, there was an error processing your request. Please try again.' },
+      ]);
+    }
   };
 
-  // Sample data for the dashboard
-  const stats = [
-    { name: 'Total Chatbots', value: '12', icon: (
-      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-      </svg>
-    ) },
-    { name: 'Active Users', value: '2,543', icon: (
-      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    ) },
-    { name: 'Messages Processed', value: '45,678', icon: (
-      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    ) },
-    { name: 'Avg. Response Time', value: '1.2s', icon: (
-      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ) },
-  ];
+  const handleChangePassword = async (e: any) => {
+    e.preventDefault();
+    setIsChangingPassword(true);
+    setPasswordError('');
 
-  const recentChatbots = [
-    { id: 1, name: 'Website Assistant', status: 'active', interactions: 1243, lastUpdated: '2 hours ago' },
-  ];
+    // Validate passwords
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      setIsChangingPassword(false);
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters long');
+      setIsChangingPassword(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to change password');
+      }
+
+      // Reset form and show success
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordModal(false);
+      setSuccessMessage('Password changed successfully!');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (err: any) {
+      console.error('Error changing password:', err);
+      setPasswordError(err.message || 'Failed to change password. Please try again.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Calculate dashboard stats from actual data
+  const calculateStats = () => {
+    // Count active chatbots (those with at least one completed training source)
+    const activeChatbots = chatbots.filter(chatbot =>
+      chatbot.trainingSources?.some(source => source.status === 'completed')
+    );
+
+    // Count total training sources
+    const totalTrainingSources = chatbots.reduce((total, chatbot) =>
+      total + (chatbot.trainingSources?.length || 0), 0
+    );
+
+    // Count completed training sources
+    const completedTrainingSources = chatbots.reduce((total, chatbot) =>
+      total + (chatbot.trainingSources?.filter(source => source.status === 'completed').length || 0), 0
+    );
+
+    return [
+      {
+        name: 'Total Chatbots',
+        value: chatbots.length.toString(),
+        icon: (
+          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        )
+      },
+      {
+        name: 'Active Chatbots',
+        value: activeChatbots.length.toString(),
+        icon: (
+          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      },
+      {
+        name: 'Training Sources',
+        value: totalTrainingSources.toString(),
+        icon: (
+          <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        )
+      },
+      {
+        name: 'Completed Sources',
+        value: completedTrainingSources.toString(),
+        icon: (
+          <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        )
+      },
+    ];
+  };
+
+  const stats = calculateStats();
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
+        return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+      }
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  // Get chatbot status
+  const getChatbotStatus = (chatbot: any) => {
+    if (chatbot.trainingSources?.some(source => source.status === 'completed')) {
+      return { status: 'active', className: 'bg-green-100 text-green-800' };
+    } else if (chatbot.trainingSources?.some(source => source.status === 'processing')) {
+      return { status: 'training', className: 'bg-yellow-100 text-yellow-800' };
+    } else if (chatbot.trainingSources?.some(source => source.status === 'failed')) {
+      return { status: 'failed', className: 'bg-red-100 text-red-800' };
+    } else {
+      return { status: 'inactive', className: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
+  // Calculate interactions for a chatbot (placeholder - would be replaced with real data)
+  const calculateInteractions = (chatbot: any) => {
+    // In a real implementation, this would come from the API
+    return Math.floor(Math.random() * 1000) + 100; // Random number for demo purposes
+  };
+
+  // Password change modal
+  const PasswordChangeModal = () => {
+    if (!showPasswordModal) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-gray-200/80 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Change Password</h3>
+            <button 
+              onClick={() => {
+                setShowPasswordModal(false);
+                setPasswordError('');
+                setPasswordData({
+                  currentPassword: '',
+                  newPassword: '',
+                  confirmPassword: ''
+                });
+              }}
+              className="text-gray-400 hover:text-gray-500"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {passwordError && (
+            <div className="mb-4 p-2 bg-red-50 text-red-700 text-sm rounded">
+              {passwordError}
+            </div>
+          )}
+          
+          <form onSubmit={handleChangePassword}>
+            <div className="mb-4">
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  id="currentPassword"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                  className="p-2 text-gray-700 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? (
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  id="newPassword"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                  className="p-2 text-gray-700 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  required
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                  className="p-2 text-gray-700 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordError('');
+                  setPasswordData({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isChangingPassword}
+                className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isChangingPassword ? 'Changing...' : 'Change Password'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -281,7 +612,7 @@ export default function Dashboard() {
               />
             </div>
           )}
-          <button 
+          <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-gray-500 hover:text-gray-700"
           >
@@ -368,9 +699,9 @@ export default function Dashboard() {
                 </svg>
               </button>
               <div className="relative">
-                <button 
+                <button
                   onClick={handleLogout}
-                  className="flex items-center text-sm font-medium text-white bg-red-600 p-2 rounded-md hover:bg-red-400 hover:text-white hover:text-gray-800 focus:outline-none"
+                  className="flex items-center text-sm font-medium text-white bg-red-600 p-2 rounded-md hover:red-400 hover:text-white focus:outline-none"
                 >
                   Log Out
                 </button>
@@ -378,6 +709,23 @@ export default function Dashboard() {
             </div>
           </div>
         </header>
+
+        {/* Success message */}
+        {successMessage && (
+          <div className="m-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {successMessage}
+            </div>
+            <button onClick={() => setSuccessMessage('')} className="text-green-700 hover:text-green-900">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         <main className="p-6">
           {activeTab === 'dashboard' && (
@@ -406,7 +754,7 @@ export default function Dashboard() {
                   <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
                     <div className="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
                       <h3 className="text-lg font-medium text-gray-900">Recent Chatbots</h3>
-                      
+
                     </div>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
@@ -424,29 +772,62 @@ export default function Dashboard() {
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Last Updated
                             </th>
-                           
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Training Sources
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {recentChatbots.map((chatbot) => (
-                            <tr key={chatbot.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{chatbot.name}</div>
+                          {chatbots.length > 0 ? (
+                            chatbots.map((chatbot) => {
+                              const statusInfo = getChatbotStatus(chatbot);
+                              return (
+                                <tr key={chatbot.id} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-gray-900">{chatbot.name}</div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.className}`}>
+                                      {statusInfo.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {calculateInteractions(chatbot).toLocaleString()}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {chatbot.updatedAt ? formatDate(chatbot.updatedAt) : 'N/A'}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {chatbot.trainingSources?.length || 0} sources
+                                    {chatbot.trainingSources?.length > 0 && (
+                                      <div className="mt-1">
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                          <div
+                                            className="bg-blue-600 h-2 rounded-full"
+                                            style={{
+                                              width: `${(chatbot.trainingSources.filter(s => s.status === 'completed').length / chatbot.trainingSources.length) * 100}%`
+                                            }}
+                                          ></div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                                <div className="flex flex-col items-center justify-center">
+                                  <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                  </svg>
+                                  <p className="text-gray-500 mb-2">No chatbots found</p>
+                                  <p className="text-gray-400 text-xs">Create your first chatbot to get started</p>
+                                </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${chatbot.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                  {chatbot.status}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {chatbot.interactions.toLocaleString()}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {chatbot.lastUpdated}
-                              </td>
-                             
                             </tr>
-                          ))}
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -457,59 +838,202 @@ export default function Dashboard() {
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-lg font-medium text-gray-900">Activity Overview</h2>
                       <div className="flex space-x-2">
-                        {/* <button className="px-3 py-1 text-xs font-medium rounded-md bg-primary-100 text-primary-700">Daily</button>
-                        <button className="px-3 py-1 text-xs font-medium rounded-md text-gray-500 hover:bg-gray-100">Weekly</button> */}
-                        <button className="px-3 py-1 text-xs font-medium rounded-md text-gray-500 hover:bg-gray-100">Monthly</button>
+                        <button className="px-3 py-1 text-xs font-medium rounded-md bg-primary-100 text-primary-700">Monthly</button>
                       </div>
                     </div>
-                    <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200">
-                      <div className="text-center">
-                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        <p className="mt-2 text-sm text-gray-500">Activity chart would be displayed here</p>
+                    {chatbots.length > 0 ? (
+                      <>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <h3 className="text-sm font-medium text-gray-700 mb-2">Training Status</h3>
+                              <div className="space-y-2">
+                                {['completed', 'processing', 'failed', 'pending'].map(status => {
+                                  const count = chatbots.reduce((total, chatbot) =>
+                                    total + (chatbot.trainingSources?.filter(s => s.status === status).length || 0), 0
+                                  );
+                                  const totalSources = chatbots.reduce((total, chatbot) =>
+                                    total + (chatbot.trainingSources?.length || 0), 0
+                                  );
+                                  const percentage = totalSources > 0 ? Math.round((count / totalSources) * 100) : 0;
+
+                                  let statusColor = '';
+                                  switch (status) {
+                                    case 'completed': statusColor = 'bg-green-500'; break;
+                                    case 'processing': statusColor = 'bg-yellow-500'; break;
+                                    case 'failed': statusColor = 'bg-red-500'; break;
+                                    default: statusColor = 'bg-gray-300';
+                                  }
+
+                                  return (
+                                    <div key={status}>
+                                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span className="capitalize">{status}</span>
+                                        <span>{percentage}%</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                          className={`${statusColor} h-2 rounded-full`}
+                                          style={{ width: `${percentage}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <h3 className="text-sm font-medium text-gray-700 mb-2">Source Types</h3>
+                              <div className="space-y-2">
+                                {['url', 'file'].map(type => {
+                                  const count = chatbots.reduce((total, chatbot) =>
+                                    total + (chatbot.trainingSources?.filter(s => s.type === type).length || 0), 0
+                                  );
+                                  const totalSources = chatbots.reduce((total, chatbot) =>
+                                    total + (chatbot.trainingSources?.length || 0), 0
+                                  );
+                                  const percentage = totalSources > 0 ? Math.round((count / totalSources) * 100) : 0;
+
+                                  return (
+                                    <div key={type}>
+                                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span className="capitalize">{type}</span>
+                                        <span>{count} sources</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                          className={`${type === 'url' ? 'bg-blue-500' : 'bg-purple-500'} h-2 rounded-full`}
+                                          style={{ width: `${percentage}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <h3 className="text-sm font-medium text-gray-700 mb-2">Recent Activity</h3>
+                            <div className="space-y-2">
+                              {chatbots.slice(0, 3).map((chatbot) => (
+                                <div key={chatbot.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
+                                  <div className="flex items-center">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                                      {chatbot.name.substring(0, 1).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-700">{chatbot.name}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {chatbot.trainingSources?.length || 0} sources •
+                                        {chatbot.trainingSources?.filter(s => s.status === 'completed').length || 0} completed
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs text-gray-500">{chatbot.updatedAt ? formatDate(chatbot.updatedAt) : 'N/A'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200">
+                        <div className="text-center">
+                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          <p className="mt-2 text-sm text-gray-500">Create chatbots to see activity data</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Right Column - Chatbot Demo */}
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 h-[30rem]">
                   <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100 flex flex-col h-full">
-                    <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    {/* <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
                       <h3 className="text-lg font-medium text-gray-900">Website Assistant</h3>
                       <p className="mt-1 text-sm text-gray-500">Test your chatbot responses</p>
-                    </div>
-                    
-                    <div className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4" style={{ maxHeight: '400px' }}>
-                      {chatMessages.map((message, index) => (
-                        <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-800'}`}>
-                            {message.content}
-                          </div>
+                    </div> */}
+
+                    {chatbots.length > 0 ? (
+                      <>
+                        <div className="p-4 border-b border-gray-200">
+                          <label htmlFor="chatbot-select" className="block text-sm font-medium text-gray-700 mb-1">
+                            Select Chatbot to Test
+                          </label>
+                          <select
+                            id="chatbot-select"
+                            value={selectedChatbotId}
+                            onChange={(e) => setSelectedChatbotId(e.target.value)}
+                            className="block text-gray-700 w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                          >
+                            <option value="">Select a chatbot...</option>
+                            {chatbots.map((bot) => (
+                              <option key={bot.id} value={bot.id}>
+                                {bot.name} {bot.apiKey ? '(API Key Ready)' : '(No API Key)'}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                      ))}
-                    </div>
-                    
-                    <div className="border-t border-gray-200 p-4">
-                      <form onSubmit={handleChatSubmit} className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          placeholder="Type your message..."
-                          className="flex-1 focus:ring-blue-500 text-gray-700 focus:border-blue-500 block w-full rounded-md sm:text-sm border-gray-300"
-                        />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        <div className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4" style={{ maxHeight: '400px' }}>
+                          {chatMessages.map((message, index) => (
+                            <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-800'}`}>
+                                {message.isTyping ? (
+                                  <div className="flex space-x-1 items-center">
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                  </div>
+                                ) : (
+                                  message.content
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="border-t border-gray-200 p-4">
+                          <form onSubmit={handleChatSubmit} className="flex space-x-2">
+                            <input
+                              type="text"
+                              value={chatInput}
+                              onChange={(e) => setChatInput(e.target.value)}
+                              placeholder="Type your message..."
+                              className="flex-1 focus:ring-blue-500 pl-2 text-gray-700 focus:border-blue-500 block w-full rounded-md sm:text-sm border-gray-300"
+                            />
+                            <button
+                              type="submit"
+                              className="inline-flex items-center p-3 rounded-full border border-transparent text-sm leading-4 font-medium shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              <svg className="h-5 w-5 rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                            </button>
+                          </form>
+                          {/* <div className="mt-2 text-xs text-gray-500 flex items-center">
+                            <div className="w-2 h-2 rounded-full bg-green-500 mr-1"></div>
+                            <span>Using: {
+                              selectedChatbotId 
+                                ? chatbots.find(bot => bot.id === selectedChatbotId)?.name || 'Unknown Chatbot'
+                                : 'No chatbot selected'
+                            }</span>
+                          </div> */}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center p-6">
+                        <div className="text-center">
+                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                           </svg>
-                        </button>
-                      </form>
-                    </div>
+                          <p className="mt-2 text-sm text-gray-500">No chatbots available</p>
+                          <p className="mt-1 text-xs text-gray-400">Create a chatbot to test responses</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -523,7 +1047,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {activeTab === 'aimodels' && <AIModelSettings onSettingsSaved={() =>{
+          {activeTab === 'aimodels' && <AIModelSettings onSettingsSaved={() => {
             setSuccessMessage('AI model settings saved successfully!');
             setTimeout(() => setSuccessMessage(''), 3000);
           }} />}
@@ -554,7 +1078,7 @@ export default function Dashboard() {
                       className="mt-1 p-2 text-gray-700 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       placeholder="you@example.com"
                       value={userData?.email || ''}
-                     disabled
+                      disabled
                     />
                   </div>
                   <div>
@@ -571,6 +1095,18 @@ export default function Dashboard() {
                         settings: { ...userData?.settings, phone: e.target.value }
                       })}
                     />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      onClick={() => setShowPasswordModal(true)}
+                    >
+                      Change Password
+                    </button>
+                    {showPasswordModal && (
+                      <PasswordChangeModal/>
+                    )}
                   </div>
                   <div className="pt-5">
                     <div className="flex justify-end">
@@ -600,11 +1136,11 @@ export default function Dashboard() {
                 <div className="mt-2 max-w-xl text-sm text-gray-500">
                   <p>Permanently delete your account and all of your content.</p>
                 </div>
-                
+
                 {!showDeleteConfirm ? (
                   <div className="mt-5">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowDeleteConfirm(true)}
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                     >
@@ -615,7 +1151,7 @@ export default function Dashboard() {
                   <div className="mt-5 bg-red-50 p-4 rounded-md">
                     <p className="text-sm text-red-700 mb-4">Are you sure you want to delete your account? This action cannot be undone.</p>
                     <div className="flex space-x-3">
-                      <button 
+                      <button
                         type="button"
                         disabled={isDeleting}
                         onClick={async () => {
@@ -624,11 +1160,11 @@ export default function Dashboard() {
                             const response = await fetch('/api/user', {
                               method: 'DELETE',
                             });
-                            
+
                             if (!response.ok) {
                               throw new Error('Failed to delete account');
                             }
-                            
+
                             // Sign out and redirect to home page
                             await signOut({ redirect: false });
                             router.push('/');
@@ -644,7 +1180,7 @@ export default function Dashboard() {
                       >
                         {isDeleting ? 'Deleting...' : 'Yes, Delete Account'}
                       </button>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
                         className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"

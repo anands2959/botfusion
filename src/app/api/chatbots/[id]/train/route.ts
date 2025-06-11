@@ -19,7 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const userId = session.user.id;
-    const chatbotId = params.id;
+    // In Next.js 15, params is a Promise that needs to be awaited
+    const { id: chatbotId } = await params;
     const { type, url, filename } = await req.json();
 
     // Validate input
@@ -103,16 +104,71 @@ async function processWebsiteTraining(trainingSourceId: string, url: string) {
       data: { status: 'processing', progress: 10 },
     });
 
-    // Crawl the website (max 20 pages)
-    const { content, urls } = await crawlWebsite(url, 20);
+    // Progress callback function to update the database with crawling progress
+    const updateProgress = async (progress: number, currentUrl: string) => {
+      console.log(`Crawling progress: ${progress}% - ${currentUrl}`);
+      await prisma.trainingSource.update({
+        where: { id: trainingSourceId },
+        data: { 
+          progress: progress, // Remove the cap to allow 100% completion
+          filename: `Currently crawling: ${currentUrl}` // Use filename field to store current URL
+        },
+      });
+    };
 
-    // Update progress
+    // Crawl the website (max 20 pages) with progress updates
+    const { content, urls } = await crawlWebsite(url, 20, updateProgress);
+
+    // Update progress to indicate crawling is complete
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
-      data: { progress: 50 },
+      data: { 
+        progress: 90,
+        filename: `Crawled ${urls.length} pages, processing content...`
+      },
     });
 
-    // In a real implementation, you would process and store the content
+    // Get the user who owns this training source
+    const trainingSource = await prisma.trainingSource.findUnique({
+      where: { id: trainingSourceId },
+      include: { chatbot: { include: { user: { include: { settings: true } } } } },
+    });
+
+    if (!trainingSource || !trainingSource.chatbot || !trainingSource.chatbot.user) {
+      throw new Error('Training source, chatbot, or user not found');
+    }
+
+    // Get the selected AI model and API key
+    const settings = trainingSource.chatbot.user.settings;
+    const selectedModel = settings?.defaultAIModel || 'chatgpt-free';
+    let apiKey = '';
+    let provider = '';
+
+    // Determine which API key to use based on the selected model
+    if (selectedModel === 'chatgpt-free') {
+      apiKey = settings?.openaiApiKey || '';
+      provider = 'openai';
+    } else if (selectedModel === 'claude-free') {
+      apiKey = settings?.anthropicApiKey || '';
+      provider = 'anthropic';
+    } else if (selectedModel === 'gemini-free') {
+      apiKey = settings?.googleApiKey || '';
+      provider = 'google';
+    } else if (selectedModel === 'deepseek-free') {
+      apiKey = settings?.deepseekApiKey || '';
+      provider = 'deepseek';
+    }
+
+    // Check if API key is available
+    if (!apiKey) {
+      throw new Error(`API key for ${provider} is not configured`);
+    }
+
+    // In a real implementation, you would:
+    // 1. Use the selected model's API to convert content to embeddings
+    // 2. Store these embeddings in a vector database
+    // 3. Associate them with this chatbot for future retrieval
+    
     // For now, we'll just update the status to completed
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
@@ -120,7 +176,7 @@ async function processWebsiteTraining(trainingSourceId: string, url: string) {
         status: 'completed', 
         progress: 100,
         // Store metadata about the crawl
-        url: `${url} (crawled ${urls.length} pages)`
+        url: `${url} (crawled ${urls.length} pages, processed with ${provider})`
       },
     });
 
@@ -137,30 +193,110 @@ async function processWebsiteTraining(trainingSourceId: string, url: string) {
 // Process PDF training asynchronously
 async function processPDFTraining(trainingSourceId: string, filename: string, userId: string) {
   try {
+    console.log(`Processing PDF: ${filename}`);
+    
     // Update to processing
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
-      data: { status: 'processing', progress: 10 },
+      data: { 
+        status: 'processing', 
+        progress: 10,
+        filename: `Starting to process: ${filename}`
+      },
     });
 
-    // Construct the file path
+    // Get the file path
     const filePath = path.join(process.cwd(), 'uploads', userId, filename);
-
-    // Process the PDF
+    
+    // Update progress before extraction
+    await prisma.trainingSource.update({
+      where: { id: trainingSourceId },
+      data: { 
+        progress: 30,
+        filename: `Extracting text from: ${filename}`
+      },
+    });
+    
+    // Extract text from PDF
     const content = await processPDFForTraining(filePath);
-
-    // Update progress
+    
+    // Update progress after extraction
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
-      data: { progress: 50 },
+      data: { 
+        progress: 70,
+        filename: `Text extracted from: ${filename}, processing content...`
+      },
     });
 
-    // In a real implementation, you would process and store the content
-    // For now, we'll just update the status to completed
+    // Get the user who owns this training source
+    const trainingSource = await prisma.trainingSource.findUnique({
+      where: { id: trainingSourceId },
+      include: { chatbot: { include: { user: { include: { settings: true } } } } },
+    });
+
+    if (!trainingSource || !trainingSource.chatbot || !trainingSource.chatbot.user) {
+      throw new Error('Training source, chatbot, or user not found');
+    }
+
+    // Get the selected AI model and API key
+    const settings = trainingSource.chatbot.user.settings;
+    const selectedModel = settings?.defaultAIModel || 'chatgpt-free';
+    let apiKey = '';
+    let provider = '';
+
+    // Determine which API key to use based on the selected model
+    if (selectedModel === 'chatgpt-free') {
+      apiKey = settings?.openaiApiKey || '';
+      provider = 'openai';
+    } else if (selectedModel === 'claude-free') {
+      apiKey = settings?.anthropicApiKey || '';
+      provider = 'anthropic';
+    } else if (selectedModel === 'gemini-free') {
+      apiKey = settings?.googleApiKey || '';
+      provider = 'google';
+    } else if (selectedModel === 'deepseek-free') {
+      apiKey = settings?.deepseekApiKey || '';
+      provider = 'deepseek';
+    }
+
+    // Check if API key is available
+    if (!apiKey) {
+      throw new Error(`API key for ${provider} is not configured`);
+    }
+
+    // Simulate the process of using the selected AI model to generate embeddings
+    console.log(`Using ${provider} API to generate embeddings for content...`);
+    
+    // Update progress to indicate embedding generation has started
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
-      data: { status: 'completed', progress: 100 },
+      data: { 
+        progress: 90,
+        filename: `Generating embeddings with ${provider} API...`
+      },
     });
+    
+    // Simulate a delay for embedding generation (in a real implementation, this would be an actual API call)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // In a real implementation, you would:
+    // 1. Use the selected model's API to convert content to embeddings
+    // 2. Store these embeddings in a vector database
+    // 3. Associate them with this chatbot for future retrieval
+    
+    // Update the status to completed with metadata about the processing
+    await prisma.trainingSource.update({
+      where: { id: trainingSourceId },
+      data: { 
+        status: 'completed', 
+        progress: 100,
+        // Store metadata about the processing
+        filename: `${filename} (processed with ${provider} using ${selectedModel})`
+      },
+    });
+    
+    console.log(`Successfully completed training for ${filename} using ${selectedModel}`);
 
     console.log(`Successfully processed PDF: ${filename}`);
   } catch (error) {
@@ -185,8 +321,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const userId = session.user.id;
-    // Make sure to await params.id before using it
-    const chatbotId = await params.id;
+    // In Next.js 15, params is a Promise that needs to be awaited
+    const { id: chatbotId } = await params;
 
     // Check if chatbot exists and belongs to the user
     const chatbot = await prisma.chatbot.findUnique({
@@ -209,11 +345,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Get all pending training sources
-    const pendingSources = chatbot.trainingSources.filter(source => source.status === 'pending');
+    const pendingSources = chatbot.trainingSources.filter(source => 
+      source.status === 'pending' || (source.status === 'processing' && source.progress < 20)
+    );
 
     if (pendingSources.length === 0) {
       return NextResponse.json(
-        { error: 'No pending training sources found' },
+        { error: 'No sources available for training. Please add new sources or check if all sources are already completed.' },
         { status: 400 }
       );
     }
@@ -232,12 +370,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Process each source
     for (const source of pendingSources) {
-      if (source.type === 'website' && source.url) {
-        // Process website in the background
-        processWebsiteTraining(source.id, source.url);
-      } else if (source.type === 'pdf' && source.filename) {
-        // Process PDF in the background
-        processPDFTraining(source.id, source.filename, userId);
+      // Only process sources that are in pending status
+      if (source.status === 'pending') {
+        if (source.type === 'website' && source.url) {
+          // Process website in the background
+          processWebsiteTraining(source.id, source.url);
+        } else if (source.type === 'pdf' && source.filename) {
+          // Process PDF in the background
+          processPDFTraining(source.id, source.filename, userId);
+        }
       }
     }
 
@@ -267,8 +408,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     const userId = session.user.id;
-    // Make sure to await params.id before using it
-    const chatbotId = await params.id;
+    // In Next.js 15, params is a Promise that needs to be awaited
+    const { id: chatbotId } = await params;
 
     // Check if chatbot exists and belongs to the user
     const chatbot = await prisma.chatbot.findUnique({

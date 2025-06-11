@@ -78,8 +78,7 @@ model Settings {
   openaiApiKey      String?
   anthropicApiKey   String?
   googleApiKey      String?
-  mistralApiKey     String?
-  llamaApiKey       String?
+  deepseekApiKey    String?
   phone             String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
