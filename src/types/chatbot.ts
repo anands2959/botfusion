@@ -19,6 +19,8 @@ export interface TrainingSource {
   filename?: string;
   status: string;
   progress: number;
+  extractedContent?: string;
+  extractedUrls?: string[];
   createdAt: string;
   updatedAt: string;
   chatbotId: string;

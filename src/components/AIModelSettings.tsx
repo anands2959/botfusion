@@ -825,16 +825,51 @@ export default function AIModelSettings() {
                             <div className="mt-3 p-2 bg-gray-50 rounded border border-gray-200 text-sm">
                               <h5 className="font-medium mb-1">Training Details:</h5>
                               <p className="text-gray-700 mb-2">{source.filename || source.url}</p>
+                              
                               {source.type === 'website' && source.url && (
                                 <div>
-                                  <p className="text-gray-600 text-xs mb-1">Extracted from website:</p>
+                                  <p className="text-gray-600 text-xs mb-1">Source website:</p>
                                   <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
                                     {source.url}
                                   </a>
+                                  
+                                  {/* Display crawled URLs */}
+                                  {source.extractedUrls && source.extractedUrls.length > 0 && (
+                                    <div className="mt-2">
+                                      <p className="text-gray-600 text-xs mb-1">Crawled pages ({source.extractedUrls.length}):</p>
+                                      <div className="max-h-32 overflow-y-auto text-xs">
+                                        {source.extractedUrls.map((url, index) => (
+                                          <a 
+                                            key={index} 
+                                            href={url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="block text-blue-600 hover:underline truncate mb-1"
+                                          >
+                                            {url}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
+                              
                               {source.type === 'pdf' && source.filename && (
                                 <p className="text-gray-600 text-xs">Extracted from PDF: {source.filename}</p>
+                              )}
+                              
+                              {/* Display extracted content preview */}
+                              {source.extractedContent && (
+                                <div className="mt-2">
+                                  <p className="text-gray-600 text-xs mb-1">Content preview:</p>
+                                  <div className="max-h-32 overflow-y-auto p-2 bg-white border border-gray-200 rounded text-xs">
+                                    {source.extractedContent.length > 500 
+                                      ? source.extractedContent.substring(0, 500) + '...' 
+                                      : source.extractedContent
+                                    }
+                                  </div>
+                                </div>
                               )}
                             </div>
                           )}

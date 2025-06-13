@@ -15,6 +15,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       );
     }
 
+    // Check if the API key is an inactive key
+    if (apiKey.startsWith('inactive_')) {
+      return NextResponse.json(
+        { error: 'Invalid API key' },
+        { status: 403 }
+      );
+    }
+
     // Find chatbot by API key
     const chatbot = await prisma.chatbot.findUnique({
       where: { apiKey },
@@ -79,21 +87,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       // Get all completed training sources for this chatbot
       const completedSources = chatbot.trainingSources.filter(source => source.status === 'completed');
       
-      // In a production environment, this would be replaced with actual vector database search
-      // For now, we'll simulate the process of retrieving relevant content and generating a response
-      
       try {
-        // Simulate analyzing the user's question
+        // Import the vector database search function
+        const { searchSimilarContent } = await import('@/lib/vector-db');
+        
         console.log(`Analyzing question: "${message}" using ${provider} model`);
         
-        // Get the training sources information to include in the response
-        const sourceInfo = completedSources.map(source => {
-          if (source.type === 'website') {
-            return `Website: ${source.url}`;
-          } else {
-            return `Document: ${source.filename}`;
-          }
-        }).join('\n- ');
+        // Search for relevant content based on the user's question
+        const searchResults = await searchSimilarContent(message, chatbot.id, provider, apiKey);
         
         // Generate a professional response based on the selected AI model
         const modelInfo = {
@@ -117,20 +118,53 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         
         const modelDetails = modelInfo[selectedModel] || { name: provider, style: 'helpful' };
         
-        // Simulate the AI analyzing the question and generating a response
+        // Handle common greetings and farewells
         const lowercaseMessage = message.toLowerCase();
         
         if (lowercaseMessage.includes('hello') || lowercaseMessage.includes('hi')) {
-          response = `Hello! I'm ${chatbot.name}, your AI assistant powered by ${modelDetails.name}. I've been trained on your content and I'm here to help answer your questions in a ${modelDetails.style} manner.`;
-        } else if (lowercaseMessage.includes('help')) {
-          response = `I can provide information based on the content I was trained on. I've analyzed the following sources:\n- ${sourceInfo}\n\nWhat specific information are you looking for?`;
+          response = `Hello! I'm here to help answer your questions. How can I assist you today?`;
         } else if (lowercaseMessage.includes('thank')) {
-          response = 'You\'re welcome! I\'m glad I could assist you. If you have any more questions about your content, feel free to ask.';
+          response = 'You\'re welcome! I\'m glad I could assist you. Feel free to ask if you have any more questions.';
         } else if (lowercaseMessage.includes('bye') || lowercaseMessage.includes('goodbye')) {
-          response = 'Goodbye! Feel free to return whenever you need assistance with your content.';
+          response = 'Goodbye! Feel free to return whenever you need assistance.';
         } else {
-          // Simulate a more detailed response that would come from the AI model
-          response = `Based on the content I was trained on, I can provide the following information about "${message}":\n\nAs your ${modelDetails.style} assistant powered by ${modelDetails.name}, I've analyzed your question against the content from:\n- ${sourceInfo}\n\nIn a production environment, I would retrieve the most relevant information from these sources and generate a comprehensive response using the ${selectedModel} model with your ${provider} API key.\n\nIs there a specific aspect of this topic you'd like me to focus on?`;
+          // If we have relevant content from the vector search
+          if (searchResults.length > 0) {
+            // Get the most relevant content chunks
+            const relevantContent = searchResults
+              .filter(result => result.similarity > 0.7) // Only use results with high similarity
+              .map(result => result.content)
+              .join('\n\n');
+            
+            // Use OpenAI to generate a response based on the relevant content
+            const OpenAI = (await import('openai')).OpenAI;
+            const openai = new OpenAI({ apiKey });
+            
+            const completion = await openai.chat.completions.create({
+              model: "gpt-3.5-turbo",
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a helpful assistant that answers questions based on the provided content. 
+                  Only use the information in the provided content to answer the question. 
+                  If the content doesn't contain relevant information to answer the question, say that you don't have enough information. 
+                  Do not mention the source of your information or refer to the provided content in your answer. 
+                  Keep your answers concise and to the point.`
+                },
+                {
+                  role: "user",
+                  content: `Content: ${relevantContent}\n\nQuestion: ${message}`
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 500
+            });
+            
+            response = completion.choices[0].message.content.trim();
+          } else {
+            // No relevant content found
+            response = "I'm sorry, but I don't have enough information to answer that question. Could you try asking something else related to the content I was trained on?";
+          }
         }
       } catch (error) {
         console.error('Error generating response:', error);

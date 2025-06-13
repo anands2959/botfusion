@@ -26,7 +26,7 @@ export default function Hero() {
                 Create intelligent chatbots from your website content or PDF documents with your own AI models. Enhance customer engagement, provide 24/7 support, and boost conversions with BotFusion.
               </p>
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                <div className="rounded-md shadow">
+                <div className="rounded-full shadow">
                   <Link
                     href="/signup"
                     className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10 transition-colors"

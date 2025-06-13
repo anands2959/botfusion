@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { PDFDocument } from 'pdf-lib';
+// Import types only, we'll dynamically import the actual module
+type PDFParseResult = { text: string, numpages: number, info: any, metadata: any, version: string };
+type PDFParse = (dataBuffer: Buffer, options?: any) => Promise<PDFParseResult>;
 
 /**
  * Extracts text content from a PDF file
@@ -13,17 +15,16 @@ import { PDFDocument } from 'pdf-lib';
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   try {
     // Read the PDF file
-    const pdfBytes = fs.readFileSync(filePath);
+    const dataBuffer = fs.readFileSync(filePath);
     
-    // Load the PDF document
-    const pdfDoc = await PDFDocument.load(pdfBytes);
+    // Dynamically import pdf-parse to avoid loading test files during initialization
+    const pdfParse = (await import('pdf-parse')).default as PDFParse;
     
-    // Get the number of pages
-    const numPages = pdfDoc.getPageCount();
+    // Use pdf-parse to extract text
+    const data = await pdfParse(dataBuffer);
     
-    // In a real implementation, you would extract text from each page
-    // For now, we'll return a placeholder message
-    return `PDF document with ${numPages} pages processed. In a production environment, this would contain the actual text content extracted from the PDF.`;
+    // Return the text content
+    return data.text.trim();
   } catch (error : any) {
     console.error(`Error extracting text from PDF ${filePath}:`, error);
     throw new Error(`Failed to extract text from PDF: ${error.message}`);

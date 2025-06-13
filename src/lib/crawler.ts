@@ -118,13 +118,35 @@ export async function crawlWebsite(
   startUrl: string, 
   maxPages: number = 10, 
   progressCallback?: (progress: number, currentUrl: string) => Promise<void>
-): Promise<{ content: string, urls: string[] }> {
+): Promise<{ content: string, urls: string[], pageContents: { [url: string]: string } }> {
   const visited: Set<string> = new Set();
   const queue: string[] = [startUrl];
   let content = '';
+  const pageContents: { [url: string]: string } = {};
   
   // Normalize the start URL
   const baseUrl = new URL(startUrl).origin;
+  
+  // Add special pages to crawl (terms, privacy, about, etc.)
+  const specialPaths = [
+    '/terms', '/terms-of-service', '/terms-and-conditions', '/tos',
+    '/privacy', '/privacy-policy',
+    '/about', '/about-us',
+    '/contact', '/contact-us',
+    '/faq', '/help'
+  ];
+  
+  // Add special pages to the queue
+  for (const path of specialPaths) {
+    try {
+      const specialUrl = new URL(path, startUrl).href;
+      if (!queue.includes(specialUrl)) {
+        queue.push(specialUrl);
+      }
+    } catch (error) {
+      console.error(`Error creating URL for ${path}:`, error);
+    }
+  }
   
   while (queue.length > 0 && visited.size < maxPages) {
     const currentUrl = queue.shift()!;
@@ -138,7 +160,7 @@ export async function crawlWebsite(
     visited.add(currentUrl);
     
     // Calculate and report progress
-    const progress = Math.round((visited.size / maxPages) * 100); // Remove the 90% cap
+    const progress = Math.round((visited.size / maxPages) * 100);
     if (progressCallback) {
       await progressCallback(progress, currentUrl);
     }
@@ -147,6 +169,9 @@ export async function crawlWebsite(
       // Extract content from the current page
       const pageContent = await extractContent(currentUrl);
       content += `\n\n--- Content from ${currentUrl} ---\n\n${pageContent}`;
+      
+      // Store the content for this specific URL
+      pageContents[currentUrl] = pageContent;
       
       // Extract links from the current page
       const links = await extractLinks(currentUrl, baseUrl);
@@ -169,6 +194,7 @@ export async function crawlWebsite(
   
   return {
     content,
-    urls: Array.from(visited)
+    urls: Array.from(visited),
+    pageContents
   };
 }

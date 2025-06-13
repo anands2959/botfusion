@@ -8,6 +8,7 @@ import { signOut, useSession } from 'next-auth/react';
 import AIModelSettings from '@/components/AIModelSettings';
 import ChatbotEditor from '@/components/ChatbotEditor';
 import ApiKeyGenerator from '@/components/ApiKeyGenerator';
+import { TrainingSource, Chatbot } from '@/types/chatbot';
 
 // Icons for the sidebar
 const DashboardIcon = () => (
@@ -41,7 +42,14 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([]);
+  // Define the ChatMessage type
+  type ChatMessage = {
+    role: string;
+    content: string;
+    isTyping?: boolean;
+  };
+  
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [userData, setUserData] = useState({
     name: '',
     email: '',
@@ -55,7 +63,7 @@ export default function Dashboard() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [chatbots, setChatbots] = useState([]);
+  const [chatbots, setChatbots] = useState<Chatbot[]>([]);
   const [selectedChatbotId, setSelectedChatbotId] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -117,7 +125,7 @@ export default function Dashboard() {
       
       // Set the first chatbot as selected if available and has API key
       if (data.chatbots && data.chatbots.length > 0) {
-        const chatbotsWithApiKey = data.chatbots.filter(bot => bot.apiKey);
+        const chatbotsWithApiKey = data.chatbots.filter((bot: Chatbot) => bot.apiKey);
         if (chatbotsWithApiKey.length > 0) {
           setSelectedChatbotId(chatbotsWithApiKey[0].id);
         } else if (data.chatbots.length > 0) {
@@ -229,7 +237,7 @@ export default function Dashboard() {
     setChatInput('');
 
     // Get the selected chatbot
-    const selectedChatbot = chatbots.find(bot => bot.id === selectedChatbotId);
+    const selectedChatbot = chatbots.find((bot: Chatbot) => bot.id === selectedChatbotId);
     if (!selectedChatbot || !selectedChatbot.apiKey) {
       // Add error message if no chatbot is selected or it has no API key
       setChatMessages([
@@ -335,18 +343,18 @@ export default function Dashboard() {
   // Calculate dashboard stats from actual data
   const calculateStats = () => {
     // Count active chatbots (those with at least one completed training source)
-    const activeChatbots = chatbots.filter(chatbot =>
-      chatbot.trainingSources?.some(source => source.status === 'completed')
+    const activeChatbots = chatbots.filter((chatbot: Chatbot) =>
+      chatbot.trainingSources?.some((source: TrainingSource) => source.status === 'completed')
     );
 
     // Count total training sources
-    const totalTrainingSources = chatbots.reduce((total, chatbot) =>
+    const totalTrainingSources = chatbots.reduce((total, chatbot: Chatbot) =>
       total + (chatbot.trainingSources?.length || 0), 0
     );
 
     // Count completed training sources
-    const completedTrainingSources = chatbots.reduce((total, chatbot) =>
-      total + (chatbot.trainingSources?.filter(source => source.status === 'completed').length || 0), 0
+    const completedTrainingSources = chatbots.reduce((total, chatbot: Chatbot) =>
+      total + (chatbot.trainingSources?.filter((source: TrainingSource) => source.status === 'completed').length || 0), 0
     );
 
     return [
@@ -413,24 +421,19 @@ export default function Dashboard() {
   };
 
   // Get chatbot status
-  const getChatbotStatus = (chatbot: any) => {
-    if (chatbot.trainingSources?.some(source => source.status === 'completed')) {
+  const getChatbotStatus = (chatbot: Chatbot) => {
+    if (chatbot.trainingSources?.some((source: TrainingSource) => source.status === 'completed')) {
       return { status: 'active', className: 'bg-green-100 text-green-800' };
-    } else if (chatbot.trainingSources?.some(source => source.status === 'processing')) {
+    } else if (chatbot.trainingSources?.some((source: TrainingSource) => source.status === 'processing')) {
       return { status: 'training', className: 'bg-yellow-100 text-yellow-800' };
-    } else if (chatbot.trainingSources?.some(source => source.status === 'failed')) {
+    } else if (chatbot.trainingSources?.some((source: TrainingSource) => source.status === 'failed')) {
       return { status: 'failed', className: 'bg-red-100 text-red-800' };
     } else {
       return { status: 'inactive', className: 'bg-gray-100 text-gray-800' };
     }
   };
 
-  // Calculate interactions for a chatbot (placeholder - would be replaced with real data)
-  const calculateInteractions = (chatbot: any) => {
-    // In a real implementation, this would come from the API
-    return Math.floor(Math.random() * 1000) + 100; // Random number for demo purposes
-  };
-
+ 
   // Password change modal
   const PasswordChangeModal = () => {
     if (!showPasswordModal) return null;
@@ -602,9 +605,9 @@ export default function Dashboard() {
               />
             </Link>
           ) : (
-            <div className="w-10 h-10 mx-auto">
+            <div className="w-30 h-10">
               <Image
-                src="/botfusion-logo.png"
+                src="/botfusion-short.png"
                 alt="BF"
                 width={40}
                 height={40}
@@ -616,7 +619,7 @@ export default function Dashboard() {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-gray-500 hover:text-gray-700"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               {sidebarOpen ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
               ) : (
@@ -766,9 +769,7 @@ export default function Dashboard() {
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Status
                             </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Interactions
-                            </th>
+                          
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Last Updated
                             </th>
@@ -791,9 +792,7 @@ export default function Dashboard() {
                                       {statusInfo.status}
                                     </span>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {calculateInteractions(chatbot).toLocaleString()}
-                                  </td>
+                                
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {chatbot.updatedAt ? formatDate(chatbot.updatedAt) : 'N/A'}
                                   </td>
@@ -844,74 +843,7 @@ export default function Dashboard() {
                     {chatbots.length > 0 ? (
                       <>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                              <h3 className="text-sm font-medium text-gray-700 mb-2">Training Status</h3>
-                              <div className="space-y-2">
-                                {['completed', 'processing', 'failed', 'pending'].map(status => {
-                                  const count = chatbots.reduce((total, chatbot) =>
-                                    total + (chatbot.trainingSources?.filter(s => s.status === status).length || 0), 0
-                                  );
-                                  const totalSources = chatbots.reduce((total, chatbot) =>
-                                    total + (chatbot.trainingSources?.length || 0), 0
-                                  );
-                                  const percentage = totalSources > 0 ? Math.round((count / totalSources) * 100) : 0;
-
-                                  let statusColor = '';
-                                  switch (status) {
-                                    case 'completed': statusColor = 'bg-green-500'; break;
-                                    case 'processing': statusColor = 'bg-yellow-500'; break;
-                                    case 'failed': statusColor = 'bg-red-500'; break;
-                                    default: statusColor = 'bg-gray-300';
-                                  }
-
-                                  return (
-                                    <div key={status}>
-                                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                        <span className="capitalize">{status}</span>
-                                        <span>{percentage}%</span>
-                                      </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                          className={`${statusColor} h-2 rounded-full`}
-                                          style={{ width: `${percentage}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                              <h3 className="text-sm font-medium text-gray-700 mb-2">Source Types</h3>
-                              <div className="space-y-2">
-                                {['url', 'file'].map(type => {
-                                  const count = chatbots.reduce((total, chatbot) =>
-                                    total + (chatbot.trainingSources?.filter(s => s.type === type).length || 0), 0
-                                  );
-                                  const totalSources = chatbots.reduce((total, chatbot) =>
-                                    total + (chatbot.trainingSources?.length || 0), 0
-                                  );
-                                  const percentage = totalSources > 0 ? Math.round((count / totalSources) * 100) : 0;
-
-                                  return (
-                                    <div key={type}>
-                                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                        <span className="capitalize">{type}</span>
-                                        <span>{count} sources</span>
-                                      </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                          className={`${type === 'url' ? 'bg-blue-500' : 'bg-purple-500'} h-2 rounded-full`}
-                                          style={{ width: `${percentage}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
+                         
                           <div className="bg-gray-50 p-4 rounded-lg">
                             <h3 className="text-sm font-medium text-gray-700 mb-2">Recent Activity</h3>
                             <div className="space-y-2">

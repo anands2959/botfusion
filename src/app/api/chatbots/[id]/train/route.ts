@@ -117,14 +117,16 @@ async function processWebsiteTraining(trainingSourceId: string, url: string) {
     };
 
     // Crawl the website (max 20 pages) with progress updates
-    const { content, urls } = await crawlWebsite(url, 20, updateProgress);
+    const { content, urls, pageContents } = await crawlWebsite(url, 20, updateProgress);
 
     // Update progress to indicate crawling is complete
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
       data: { 
         progress: 90,
-        filename: `Crawled ${urls.length} pages, processing content...`
+        filename: `Crawled ${urls.length} pages, processing content...`,
+        extractedContent: content,
+        extractedUrls: urls
       },
     });
 
@@ -224,8 +226,9 @@ async function processPDFTraining(trainingSourceId: string, filename: string, us
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
       data: { 
-        progress: 70,
-        filename: `Text extracted from: ${filename}, processing content...`
+        progress: 50,
+        filename: `Text extracted from: ${filename}, processing content...`,
+        extractedContent: content
       },
     });
 
@@ -265,25 +268,48 @@ async function processPDFTraining(trainingSourceId: string, filename: string, us
       throw new Error(`API key for ${provider} is not configured`);
     }
 
-    // Simulate the process of using the selected AI model to generate embeddings
+    // Use the selected AI model to generate embeddings
     console.log(`Using ${provider} API to generate embeddings for content...`);
     
     // Update progress to indicate embedding generation has started
     await prisma.trainingSource.update({
       where: { id: trainingSourceId },
       data: { 
-        progress: 90,
+        progress: 70,
         filename: `Generating embeddings with ${provider} API...`
       },
     });
     
-    // Simulate a delay for embedding generation (in a real implementation, this would be an actual API call)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Import the vector database functions
+    const { generateEmbeddings, storeEmbeddings } = await import('@/lib/vector-db');
     
-    // In a real implementation, you would:
-    // 1. Use the selected model's API to convert content to embeddings
-    // 2. Store these embeddings in a vector database
-    // 3. Associate them with this chatbot for future retrieval
+    try {
+      // Generate embeddings for the content
+      const embeddings = await generateEmbeddings(content, provider, apiKey);
+      
+      // Update progress
+      await prisma.trainingSource.update({
+        where: { id: trainingSourceId },
+        data: { 
+          progress: 85,
+          filename: `Storing embeddings in database...`
+        },
+      });
+      
+      // Store embeddings in the vector database
+      await storeEmbeddings(
+        embeddings,
+        content,
+        trainingSourceId,
+        trainingSource.chatbotId,
+        'pdf',
+        { filename }
+      );
+    } catch (embeddingError) {
+      console.error(`Error generating embeddings: ${embeddingError}`);
+      // Continue with the process even if embedding generation fails
+      // This ensures the training source is still marked as completed
+    }
     
     // Update the status to completed with metadata about the processing
     await prisma.trainingSource.update({

@@ -40,7 +40,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     // Generate a unique API key
-    const apiKey = `bf_${crypto.randomBytes(16).toString('hex')}`;
+    let apiKey: string;
+    let isUnique = false;
+    
+    // Keep generating keys until we find a unique one
+    while (!isUnique) {
+      apiKey = `bf_${crypto.randomBytes(16).toString('hex')}`;
+      
+      // Check if this key already exists
+      const existingChatbot = await prisma.chatbot.findUnique({
+        where: { apiKey },
+      });
+      
+      if (!existingChatbot) {
+        isUnique = true;
+      }
+    }
 
     // Update the chatbot with the new API key
     const updatedChatbot = await prisma.chatbot.update({
@@ -99,10 +114,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       );
     }
 
-    // Remove the API key
+    // Generate a unique inactive API key instead of using null
+    const inactiveApiKey = `inactive_${crypto.randomBytes(16).toString('hex')}`;
+    
+    // Replace the API key with an inactive one
     await prisma.chatbot.update({
       where: { id: chatbotId },
-      data: { apiKey: null },
+      data: { apiKey: inactiveApiKey },
     });
 
     return NextResponse.json({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 // Get all chatbots for the authenticated user
 export async function GET(req: NextRequest) {
@@ -75,6 +76,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Generate a unique API key with a prefix to indicate it's inactive
+    const inactiveApiKey = `inactive_${crypto.randomBytes(16).toString('hex')}`;
+    
     const chatbot = await prisma.chatbot.create({
       data: {
         name,
@@ -82,6 +86,7 @@ export async function POST(req: NextRequest) {
         logoUrl,
         colorScheme: colorScheme || '#4F46E5',
         widgetPosition: widgetPosition || 'bottom-right',
+        apiKey: inactiveApiKey, // Use an inactive key to satisfy unique constraint
         userId,
       },
     });

@@ -96,17 +96,36 @@ model Chatbot {
   userId         String           @db.ObjectId
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   trainingSources TrainingSource[]
+  embeddings     Embedding[]
 }
 
 model TrainingSource {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type      String   // "website" or "pdf"
-  url       String?
-  filename  String?
-  status    String   @default("pending") // pending, processing, completed, failed
-  progress  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chatbotId String   @db.ObjectId
-  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  type             String      // "website" or "pdf"
+  url              String?
+  filename         String?
+  status           String      @default("pending") // pending, processing, completed, failed
+  progress         Int         @default(0)
+  extractedContent String?     @db.String  // Store the extracted content from websites or PDFs
+  extractedUrls    String[]    // Store all URLs that were crawled from the website
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  chatbotId        String      @db.ObjectId
+  chatbot          Chatbot     @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  embeddings       Embedding[]
+}
+
+model Embedding {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  vector           Float[]        // The embedding vector
+  content          String         @db.String // The text content that was embedded
+  trainingSourceId String         @db.ObjectId
+  trainingSource   TrainingSource @relation(fields: [trainingSourceId], references: [id], onDelete: Cascade)
+  chatbotId        String         @db.ObjectId
+  chatbot          Chatbot        @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  sourceType       String         // "website" or "pdf"
+  filename         String?
+  url              String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }
