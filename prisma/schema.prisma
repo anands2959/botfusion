@@ -89,6 +89,7 @@ model Chatbot {
   name           String
   welcomeMessage String           @default("Hello! How can I help you today?")
   logoUrl        String?
+  logoImage      Bytes?           // Store the binary image data directly in MongoDB
   colorScheme    String           @default("#4F46E5")
   widgetPosition String           @default("bottom-right")
   apiKey         String?          @unique
