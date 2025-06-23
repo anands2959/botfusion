@@ -4,6 +4,9 @@ import { Inter, Poppins } from 'next/font/google';
 import AuthContext from '@/context/AuthContext';
 import ChatbotScript from './ChatbotScript';
 
+
+
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
