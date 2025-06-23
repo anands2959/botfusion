@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BotFusion - Self-Hosted AI Chatbot Solution
+
+<p align="center">
+  <img src="/public/botfusion-logo.png" alt="BotFusion Logo" width="300">
+</p>
+
+BotFusion is a self-hosted, open-source AI chatbot platform that allows you to create intelligent chatbots powered by your own content - websites, PDFs, and documents. With complete control over your data and AI models, BotFusion provides a privacy-focused solution for enhancing customer support and engagement.
+
+## Features
+
+- **Multi-Source Knowledge Base**: Connect your website URL, upload PDFs, or add documents directly. Our system automatically processes and indexes your content to create an intelligent knowledge base.
+
+- **Fully Customizable UI**: Complete control over your chatbot's appearance. Customize the logo, color scheme, position, and behavior to perfectly match your brand identity and website design.
+
+- **Simple Website Integration**: Embed your chatbot on any website with a single line of JavaScript. No complex setup required - just copy, paste, and your AI assistant is ready to help your visitors.
+
+- **Self-Hosted & Open Source**: Host BotFusion on your own infrastructure for complete data privacy and control. Use your own API keys from OpenAI, Anthropic, Google, or other providers.
+
+- **Advanced AI Capabilities**: Leverage state-of-the-art AI models to understand context, answer complex questions, and provide accurate information from your content. Support for multiple languages and query types.
+
+- **Conversation Analytics**: Track and analyze user interactions with detailed metrics. Understand common questions, identify knowledge gaps, and continuously improve your chatbot's performance.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18.x or higher
+- npm or yarn
+- An API key from one of the supported AI providers (OpenAI, Anthropic, Google, etc.)
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/anands2959/botfusion.git
+cd botfusion
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up environment variables:
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+DATABASE_URL="your-database-connection-string"
+NEXTAUTH_SECRET="your-nextauth-secret"
+NEXTAUTH_URL="http://localhost:3000"
+
+```
+
+4. Initialize the database:
+
+```bash
+npx prisma db push
+```
+
+5. Start the development server:
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+BotFusion can be deployed on any platform that supports Node.js applications:
 
-## Learn More
+- Self-hosted server
+- Docker container
+- Cloud platforms (AWS, Google Cloud, Azure, etc.)
+- Vercel, Netlify, or similar services
 
-To learn more about Next.js, take a look at the following resources:
+For detailed deployment instructions, please refer to the [deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How It Works
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Set Up Your Environment**: Deploy BotFusion on your own server or cloud infrastructure. Configure your preferred AI provider API keys for complete control over your data and costs.
 
-## Deploy on Vercel
+2. **Connect Your Content Sources**: Import knowledge from your website URLs, upload PDF documents, or add content directly. The system processes and indexes everything into a searchable knowledge base.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Customize Your Chatbot**: Design your chatbot's appearance to match your brand identity. Set your logo, color scheme, widget position, and conversation behavior for a seamless user experience.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Embed and Monitor**: Add a single line of JavaScript to your website to activate your chatbot. Track conversations, analyze user questions, and continuously improve your knowledge base.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- UI components from [Tailwind CSS](https://tailwindcss.com/)
+- Database ORM by [Prisma](https://www.prisma.io/)
+- Authentication via [NextAuth.js](https://next-auth.js.org/)

@@ -688,11 +688,11 @@ export default function Dashboard() {
               {activeTab === 'settings' && 'Settings'}
             </h1>
             <div className="flex items-center space-x-4">
-              <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
+              {/* <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-              </button>
+              </button> */}
               <button
                 onClick={() => setShowDeveloperModal(true)}
                 className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none"
@@ -928,7 +928,7 @@ export default function Dashboard() {
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-lg font-medium text-gray-900">Activity Overview</h2>
                       <div className="flex space-x-2">
-                        <button className="px-3 py-1 text-xs font-medium rounded-md bg-primary-100 text-primary-700">Monthly</button>
+                        <button className="px-3 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700">Monthly</button>
                       </div>
                     </div>
                     {chatbots.length > 0 ? (

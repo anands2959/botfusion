@@ -30,12 +30,18 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 10);
 
-    // Create user
+    // Create user with settings
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        settings: {
+          create: {
+            phone: '',
+            defaultAIModel: 'chatgpt-pro'
+          }
+        }
       },
     });
 

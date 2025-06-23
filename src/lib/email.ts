@@ -89,3 +89,26 @@ export async function sendVerificationEmail(email: string, otp: string) {
 
   return transporter.sendMail(mailOptions);
 }
+
+// Send password reset email with OTP
+export async function sendPasswordResetEmail(email: string, otp: string) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: 'Reset your BotFusion password',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">Reset your BotFusion password</h2>
+        <p>We received a request to reset your password. Please use the following verification code to continue with the password reset process:</p>
+        <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
+          <h1 style="font-size: 32px; letter-spacing: 8px; margin: 0;">${otp}</h1>
+        </div>
+        <p>This code will expire in 10 minutes.</p>
+        <p>If you didn't request this password reset, you can safely ignore this email. Your account is still secure.</p>
+        <p>Thanks,<br>The BotFusion Team</p>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+}

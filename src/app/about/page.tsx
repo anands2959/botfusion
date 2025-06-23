@@ -102,8 +102,8 @@ export default function AboutPage() {
         {/* Team Section */}
         <section className="py-16 px-6 md:px-12 bg-gray-50">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Our Leadership Team</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Developer</h2>
+            <div className=" gap-8">
               {/* Team Member 1 */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
                 <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4">
@@ -113,42 +113,10 @@ export default function AboutPage() {
                     </svg>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1">Sarah Johnson</h3>
-                <p className="text-blue-600 mb-3">CEO & Co-Founder</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">Anand Kumar Sharma</h3>
+                <p className="text-blue-600 mb-3">Web & Mobile App Developer</p>
                 <p className="text-gray-600 text-sm">
-                  Former AI research lead with 15+ years of experience in machine learning and natural language processing.
-                </p>
-              </div>
-              
-              {/* Team Member 2 */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
-                <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4">
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1">Michael Chen</h3>
-                <p className="text-blue-600 mb-3">CTO & Co-Founder</p>
-                <p className="text-gray-600 text-sm">
-                  Pioneered several breakthrough technologies in conversational AI and led engineering teams at top tech companies.
-                </p>
-              </div>
-              
-              {/* Team Member 3 */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
-                <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4">
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1">Emily Rodriguez</h3>
-                <p className="text-blue-600 mb-3">Chief Product Officer</p>
-                <p className="text-gray-600 text-sm">
-                  Product visionary with expertise in UX design and a passion for creating intuitive, powerful software solutions.
+                  A full-stack web developer with a passion for creating user-friendly and efficient applications.
                 </p>
               </div>
             </div>

@@ -48,8 +48,22 @@ function SignInContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* Background decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20">
+        <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-blue-200 mix-blend-multiply"></div>
+        <div className="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-indigo-200 mix-blend-multiply"></div>
+        <div className="absolute top-1/4 right-1/3 w-48 h-48 rounded-full bg-purple-200 mix-blend-multiply"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-40 h-40 rounded-full bg-blue-300 mix-blend-multiply"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-blue-100 mix-blend-multiply"></div>
+        
+        {/* Geometric shapes */}
+        <div className="absolute top-20 right-20 w-20 h-20 rotate-45 bg-indigo-100"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 rotate-12 bg-blue-100"></div>
+        <div className="absolute top-1/3 right-1/4 w-16 h-16 rotate-45 bg-purple-100"></div>
+      </div>
+      
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <Link href="/">
           <Image
             src="/botfusion-logo.png"
@@ -71,8 +85,8 @@ function SignInContent() {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white/95 backdrop-blur-sm py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-gray-100">
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
               {error}
@@ -93,7 +107,8 @@ function SignInContent() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full text-gray-700 appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  className="block w-full text-gray-700 appearance-none rounded-lg border border-gray-200 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all duration-200 ease-in-out hover:border-blue-300"
+                  placeholder="you@example.com"
                 />
               </div>
             </div>
@@ -111,7 +126,8 @@ function SignInContent() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full text-gray-700 appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  className="block w-full text-gray-700 appearance-none rounded-lg border border-gray-200 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all duration-200 ease-in-out hover:border-blue-300"
+                  placeholder="••••••••"
                 />
               </div>
             </div>
@@ -142,7 +158,7 @@ function SignInContent() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex w-full justify-center rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 py-3 px-4 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 ease-in-out transform hover:translate-y-[-1px] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </button>

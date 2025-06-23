@@ -67,6 +67,7 @@ model OtpCode {
   userId    String   @unique @db.ObjectId
   code      String
   expires   DateTime
+  verified  Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
