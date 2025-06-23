@@ -2,7 +2,9 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import AuthContext from '@/context/AuthContext';
-import Script from 'next/script';
+import ChatbotScript from './ChatbotScript';
+
+
 
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -29,11 +31,8 @@ export default function RootLayout({
         <AuthContext>
           {children}
         </AuthContext>
-        <Script
-        src="https://botfusion-ten.vercel.app/embed.js"
-        data-chatbot-id="bf_c9b69ceae55965cc00c2de8763c31a27"
-        strategy="afterInteractive"
-      />
+        <ChatbotScript />
+
       </body>
     </html>
   );

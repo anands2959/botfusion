@@ -38,8 +38,8 @@ export default function DocumentationPage() {
                   <p>To run BotFusion, you'll need:</p>
                   <ul>
                     <li>Node.js 18.0 or higher</li>
-                    <li>PostgreSQL database</li>
-                    <li>API key from an AI provider (OpenAI, Anthropic, etc.)</li>
+                    <li>MongoDB database</li>
+                    <li>API key from an AI provider (OpenAI, Gemini, Anthropic, etc.)</li>
                     <li>Minimum 2GB RAM for the application server</li>
                   </ul>
                   
@@ -60,16 +60,18 @@ export default function DocumentationPage() {
                   </p>
                   <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
                     <code>
-                      DATABASE_URL="postgresql://username:password@localhost:5432/botfusion"
-                      NEXTAUTH_URL="http://localhost:3000"
-                      NEXTAUTH_SECRET="your-secret-key"
-                      OPENAI_API_KEY="your-openai-api-key"
-                      # Optional: Configure email for verification
-                      EMAIL_SERVER_HOST="smtp.example.com"
-                      EMAIL_SERVER_PORT=587
-                      EMAIL_SERVER_USER="your-email@example.com"
-                      EMAIL_SERVER_PASSWORD="your-email-password"
-                      EMAIL_FROM="noreply@yourdomain.com"
+                      DATABASE_URL="mongodb://username:password@localhost:27017/botfusion" <br/>
+                      NEXTAUTH_URL="http://localhost:3000" <br/>
+                      NEXTAUTH_SECRET="your-secret-key" <br/>
+                      OPENAI_API_KEY="your-openai-api-key" <br/>
+                      GEMINI_API_KEY="your-gemini-api-key" <br/>
+                      ANTHROPIC_API_KEY="your-anthropic-api-key" <br/> <br/>
+                      # Optional: Configure email for verification <br/>
+                      EMAIL_SERVER_HOST="smtp.example.com" <br/>
+                      EMAIL_SERVER_PORT=587 <br/>
+                      EMAIL_SERVER_USER="your-email@example.com" <br/>
+                      EMAIL_SERVER_PASSWORD="your-email-password" <br/>
+                      EMAIL_FROM="noreply@yourdomain.com" <br/>
                     </code>
                   </pre>
                   

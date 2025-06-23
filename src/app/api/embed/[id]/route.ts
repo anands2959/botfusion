@@ -46,7 +46,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       logoUrl: chatbot.logoUrl,
       colorScheme: chatbot.colorScheme,
       widgetPosition: chatbot.widgetPosition,
-      userId: chatbot.userId,
+      userId: chatbot.userId, // Include userId in the response
+
     }, { 
       status: 200,
       headers: corsHeaders()

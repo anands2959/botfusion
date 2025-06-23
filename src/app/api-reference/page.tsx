@@ -19,7 +19,7 @@ export default function ApiReferencePage() {
         </section>
         
         {/* API Overview */}
-        <section className="py-16 px-6 md:px-12 bg-white">
+        <section className="py-16 px-6 md:px-12 bg-white text-gray-700">
           <div className="max-w-6xl mx-auto">
             <div className="mb-16">
               <h2 className="text-3xl font-bold text-gray-900 mb-6">API Overview</h2>
@@ -297,143 +297,7 @@ export default function ApiReferencePage() {
               </div>
             </div>
             
-            {/* SDK & Client Libraries */}
-            <div className="mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">SDK & Client Libraries</h2>
-              <p className="text-gray-600 mb-8">
-                We provide official client libraries for several programming languages to make integrating with the BotFusion API easier.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* JavaScript */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">JavaScript</h3>
-                  <p className="text-gray-600 mb-4">
-                    Official JavaScript/TypeScript client for Node.js and browser applications.
-                  </p>
-                  <pre className="bg-gray-100 p-3 rounded-md overflow-x-auto text-sm mb-4">
-                    <code>npm install botfusion-js</code>
-                  </pre>
-                  <a 
-                    href="https://github.com/anands2959/botfusion-js" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View on GitHub
-                  </a>
-                </div>
-                
-                {/* Python */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">Python</h3>
-                  <p className="text-gray-600 mb-4">
-                    Official Python client library for server-side applications.
-                  </p>
-                  <pre className="bg-gray-100 p-3 rounded-md overflow-x-auto text-sm mb-4">
-                    <code>pip install botfusion</code>
-                  </pre>
-                  <a 
-                    href="https://github.com/anands2959/botfusion-python" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View on GitHub
-                  </a>
-                </div>
-                
-                {/* PHP */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">PHP</h3>
-                  <p className="text-gray-600 mb-4">
-                    Official PHP client library for web applications.
-                  </p>
-                  <pre className="bg-gray-100 p-3 rounded-md overflow-x-auto text-sm mb-4">
-                    <code>composer require botfusion/botfusion-php</code>
-                  </pre>
-                  <a 
-                    href="https://github.com/anands2959/botfusion-php" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View on GitHub
-                  </a>
-                </div>
-              </div>
-            </div>
-            
-            {/* Webhooks */}
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Webhooks</h2>
-              <div className="prose max-w-none">
-                <p>
-                  BotFusion can send webhook notifications when certain events occur in your account. 
-                  This allows you to build integrations that react to changes in real-time.
-                </p>
-                
-                <h3 className="mt-8">Setting Up Webhooks</h3>
-                <p>
-                  You can configure webhooks in your BotFusion dashboard under Settings → Webhooks. 
-                  For each webhook, you'll need to provide:
-                </p>
-                <ul>
-                  <li>A target URL where events will be sent</li>
-                  <li>A secret key for verifying webhook signatures</li>
-                  <li>The events you want to subscribe to</li>
-                </ul>
-                
-                <h3 className="mt-8">Webhook Events</h3>
-                <p>BotFusion supports the following webhook events:</p>
-                <ul>
-                  <li><code>chatbot.created</code> - A new chatbot has been created</li>
-                  <li><code>chatbot.updated</code> - A chatbot has been updated</li>
-                  <li><code>chatbot.deleted</code> - A chatbot has been deleted</li>
-                  <li><code>source.created</code> - A new knowledge source has been added</li>
-                  <li><code>source.processed</code> - A knowledge source has been processed</li>
-                  <li><code>source.failed</code> - Processing a knowledge source has failed</li>
-                  <li><code>conversation.created</code> - A new conversation has started</li>
-                  <li><code>message.created</code> - A new message has been sent</li>
-                </ul>
-                
-                <h3 className="mt-8">Webhook Payload</h3>
-                <p>Webhook payloads are sent as JSON objects with the following structure:</p>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                  <code>{
-`{
-  "event": "chatbot.created",
-  "timestamp": "2023-12-17T14:30:00.000Z",
-  "data": {
-    // Event-specific data
-  }
-}`}
-                  </code>
-                </pre>
-                
-                <h3 className="mt-8">Verifying Webhooks</h3>
-                <p>
-                  To ensure that webhook requests are coming from BotFusion, you should verify the signature included in the 
-                  <code>X-BotFusion-Signature</code> header. The signature is an HMAC SHA-256 hash of the request body, 
-                  using your webhook secret as the key.
-                </p>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                  <code>{
-`// Node.js example
-const crypto = require('crypto');
-
-function verifyWebhookSignature(payload, signature, secret) {
-  const hmac = crypto.createHmac('sha256', secret);
-  const digest = hmac.update(payload).digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(digest),
-    Buffer.from(signature)
-  );
-}`}
-                  </code>
-                </pre>
-              </div>
-            </div>
+           
           </div>
         </section>
         
