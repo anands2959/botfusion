@@ -223,7 +223,7 @@
   button.style.backgroundColor = '#4F46E5'; // Default color, will be updated from API
 
   const buttonIcon = document.createElement('img');
-  buttonIcon.src = `${BOTFUSION_URL}/chat-icon.svg`; // Default icon, will be updated from API
+  buttonIcon.src = `${BOTFUSION_URL}/chat-icon.png`; // Default icon, will be updated from API
   buttonIcon.alt = 'Chat';
 
   const chat = document.createElement('div');
@@ -233,7 +233,7 @@
   chat.innerHTML = `
     <div class="botfusion-chat-header">
       <div class="botfusion-chat-header-title">
-        <img src="${BOTFUSION_URL}/chat-icon.svg" alt="Bot">
+        <img src="${BOTFUSION_URL}/chat-icon.png" alt="Bot">
         <h3>BotFusion Assistant</h3>
       </div>
       <button class="botfusion-chat-close">&times;</button>
@@ -283,9 +283,25 @@
       if (data.logoUrl) {
         // Update logo in both button and chat header
         buttonIcon.src = data.logoUrl.startsWith('mongodb-image-')
-          ? `/uploads/${data.userId}/${data.logoUrl}`
+          ? `${BOTFUSION_URL}/api/uploads/${data.userId}/${data.logoUrl}`
           : data.logoUrl;
-        chat.querySelector('.botfusion-chat-header-title img').src = data.logoUrl;
+        
+        // Add error handling for logo image
+        buttonIcon.onerror = function() {
+          console.error('Failed to load logo image:', buttonIcon.src);
+          // Fallback to default icon
+          buttonIcon.src = `${BOTFUSION_URL}/chat-icon.png`;
+        };
+        
+        const headerLogo = chat.querySelector('.botfusion-chat-header-title img');
+        headerLogo.src = buttonIcon.src;
+        
+        // Add error handling for header logo image
+        headerLogo.onerror = function() {
+          console.error('Failed to load header logo image:', headerLogo.src);
+          // Fallback to default icon
+          headerLogo.src = `${BOTFUSION_URL}/chat-icon.png`;
+        };
       }
 
       if (data.colorScheme) {
