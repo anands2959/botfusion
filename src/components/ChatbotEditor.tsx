@@ -79,7 +79,9 @@ export default function ChatbotEditor() {
     setWelcomeMessage(chatbot.welcomeMessage);
     setColorScheme(chatbot.colorScheme);
     setWidgetPosition(chatbot.widgetPosition);
-    setLogoPreview(chatbot.logoUrl);
+    setLogoPreview(chatbot.logoUrl.startsWith('mongodb-image-') 
+    ? `/uploads/${chatbot.userId}/${chatbot.logoUrl}` 
+    : chatbot.logoUrl);
     setIsCreatingNew(false);
   };
 
@@ -274,7 +276,9 @@ export default function ChatbotEditor() {
                       {chatbot.logoUrl ? (
                         <div className="h-8 w-8 mr-3 rounded-full overflow-hidden bg-gray-100">
                           <Image 
-                            src={chatbot.logoUrl} 
+                            src={chatbot.logoUrl.startsWith('mongodb-image-') 
+                              ? `/uploads/${chatbot.userId}/${chatbot.logoUrl}` 
+                              : chatbot.logoUrl} 
                             alt={chatbot.name} 
                             width={32} 
                             height={32} 
@@ -498,6 +502,14 @@ export default function ChatbotEditor() {
                   >
                     {logoPreview ? (
                       <img src={logoPreview} alt="Chatbot logo" className="h-8 w-8 rounded-full object-cover" />
+                    ) : selectedChatbot?.logoUrl ? (
+                      <Image 
+                        src={selectedChatbot.logoUrl.startsWith('mongodb-image-') 
+                          ? `/uploads/${selectedChatbot.userId}/${selectedChatbot.logoUrl}` 
+                          : selectedChatbot.logoUrl} 
+                        alt="Chatbot logo" 
+                        className="h-8 w-8 rounded-full object-cover" 
+                      />
                     ) : (
                       <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />

@@ -6,31 +6,16 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
-// Function to save uploaded image file
-async function saveImageFile(file: File, userId: string): Promise<string> {
+// Function to process uploaded image file and return buffer for MongoDB storage
+async function processImageFile(file: File): Promise<Buffer> {
   try {
-    // Create directory for user uploads if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'uploads', userId);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    // Generate a unique filename
-    const timestamp = Date.now();
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const uniqueFilename = `${timestamp}-${sanitizedFilename}`;
-    const filePath = path.join(uploadDir, uniqueFilename);
-    
-    // Convert File to Buffer and write to filesystem
+    // Convert File to Buffer for MongoDB storage
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(filePath, buffer);
-    
-    // Return the relative URL path for the file
-    return `/uploads/${userId}/${uniqueFilename}`;
+    return buffer;
   } catch (error: any) {
-    console.error(`Error saving image file ${file.name}:`, error);
-    throw new Error(`Failed to save image file: ${error.message}`);
+    console.error(`Error processing image file ${file.name}:`, error);
+    throw new Error(`Failed to process image file: ${error.message}`);
   }
 }
 
@@ -87,11 +72,17 @@ export async function POST(req: NextRequest) {
     const logoFile = formData.get('logo') as File;
     
     let logoUrl = null;
+    let logoImage = null;
     
     // Process logo file if provided
     if (logoFile) {
-      // Save the logo file and get the URL path
-      logoUrl = await saveImageFile(logoFile, userId);
+      // Process the logo file and get the buffer for MongoDB storage
+      const imageBuffer = await processImageFile(logoFile);
+      logoImage = imageBuffer;
+      
+      // We'll still set a logoUrl for backward compatibility
+      // This can be a placeholder or identifier
+      logoUrl = `mongodb-image-${Date.now()}`;
     }
 
     // Validate required fields
@@ -110,6 +101,7 @@ export async function POST(req: NextRequest) {
         name,
         welcomeMessage: welcomeMessage || 'Hello! How can I help you today?',
         logoUrl,
+        logoImage,
         colorScheme: colorScheme || '#4F46E5',
         widgetPosition: widgetPosition || 'bottom-right',
         apiKey: inactiveApiKey, // Use an inactive key to satisfy unique constraint
