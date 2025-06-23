@@ -1,7 +1,7 @@
-(function() {
+(function () {
   // Configuration
-  const BOTFUSION_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000' 
+  const BOTFUSION_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
     : 'https://botfusion-ten.vercel.app';
 
   // Get the chatbot ID from the script tag
@@ -217,18 +217,18 @@
   // Create widget elements
   const widget = document.createElement('div');
   widget.className = 'botfusion-widget bottom-right'; // Default position, will be updated from API
-  
+
   const button = document.createElement('div');
   button.className = 'botfusion-button';
   button.style.backgroundColor = '#4F46E5'; // Default color, will be updated from API
-  
+
   const buttonIcon = document.createElement('img');
   buttonIcon.src = `${BOTFUSION_URL}/chat-icon.svg`; // Default icon, will be updated from API
   buttonIcon.alt = 'Chat';
-  
+
   const chat = document.createElement('div');
   chat.className = 'botfusion-chat bottom-right'; // Default position, will be updated from API
-  
+
   // Build chat interface with placeholders that will be updated from API
   chat.innerHTML = `
     <div class="botfusion-chat-header">
@@ -249,23 +249,23 @@
       </button>
     </div>
   `;
-  
+
   // Append elements
   button.appendChild(buttonIcon);
   widget.appendChild(button);
   widget.appendChild(chat);
   document.body.appendChild(widget);
-  
+
   // Get references to elements
   const chatMessages = chat.querySelector('.botfusion-chat-messages');
   const chatInput = chat.querySelector('input');
   const chatSubmit = chat.querySelector('button[type="submit"]');
   const chatClose = chat.querySelector('.botfusion-chat-close');
-  
+
   // Chat state
   let isChatOpen = false;
   let isTyping = false;
-  
+
   // Fetch chatbot configuration
   fetch(`${BOTFUSION_URL}/api/embed/${chatbotId}`)
     .then(response => {
@@ -279,22 +279,24 @@
       if (data.name) {
         chat.querySelector('h3').textContent = data.name;
       }
-      
+
       if (data.logoUrl) {
         // Update logo in both button and chat header
-        buttonIcon.src = data.logoUrl;
+        buttonIcon.src = data.logoUrl.startsWith('mongodb-image-')
+          ? `/uploads/${data.userId}/${data.logoUrl}`
+          : data.logoUrl;
         chat.querySelector('.botfusion-chat-header-title img').src = data.logoUrl;
       }
-      
+
       if (data.colorScheme) {
         // Apply color scheme to button and send button
         button.style.backgroundColor = data.colorScheme;
         chat.querySelector('.botfusion-chat-input button').style.backgroundColor = data.colorScheme;
-        
+
         // Apply color to chat header
         chat.querySelector('.botfusion-chat-header').style.backgroundColor = data.colorScheme;
         chat.querySelector('.botfusion-chat-header').style.color = 'white';
-        
+
         // Update user message color and input focus color
         style.textContent += `
           .botfusion-message.user {
@@ -305,14 +307,14 @@
           }
         `;
       }
-      
+
       if (data.widgetPosition) {
         // Update widget position
         widget.className = `botfusion-widget ${data.widgetPosition}`;
         // Also update chat position to match
         chat.className = `botfusion-chat ${data.widgetPosition}`;
       }
-      
+
       // Add welcome message
       if (data.welcomeMessage) {
         addMessage('bot', data.welcomeMessage);
@@ -324,29 +326,29 @@
       console.error('BotFusion:', error);
       addMessage('bot', 'Sorry, I\'m having trouble connecting. Please try again later.');
     });
-  
+
   // Event listeners
   button.addEventListener('click', toggleChat);
   chatClose.addEventListener('click', toggleChat);
-  
-  chatInput.addEventListener('keypress', function(e) {
+
+  chatInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter' && !isTyping && chatInput.value.trim()) {
       sendMessage();
     }
   });
-  
-  chatSubmit.addEventListener('click', function() {
+
+  chatSubmit.addEventListener('click', function () {
     if (!isTyping && chatInput.value.trim()) {
       sendMessage();
     }
   });
-  
+
   // Functions
   function toggleChat() {
     isChatOpen = !isChatOpen;
     chat.classList.toggle('open', isChatOpen);
   }
-  
+
   function addMessage(sender, text) {
     const message = document.createElement('div');
     message.className = `botfusion-message ${sender}`;
@@ -354,7 +356,7 @@
     chatMessages.appendChild(message);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
-  
+
   function showTypingIndicator() {
     const typing = document.createElement('div');
     typing.className = 'botfusion-typing';
@@ -367,20 +369,20 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return typing;
   }
-  
+
   function sendMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
-    
+
     // Add user message to chat
     addMessage('user', message);
     chatInput.value = '';
-    
+
     // Show typing indicator
     isTyping = true;
     chatSubmit.disabled = true;
     const typingIndicator = showTypingIndicator();
-    
+
     // Send message to server
     fetch(`${BOTFUSION_URL}/api/embed/${chatbotId}/chat`, {
       method: 'POST',
@@ -400,18 +402,18 @@
         typingIndicator.remove();
         isTyping = false;
         chatSubmit.disabled = false;
-        
+
         // Add bot response
         addMessage('bot', data.response);
       })
       .catch(error => {
         console.error('BotFusion:', error);
-        
+
         // Remove typing indicator
         typingIndicator.remove();
         isTyping = false;
         chatSubmit.disabled = false;
-        
+
         // Add error message
         addMessage('bot', 'Sorry, I\'m having trouble responding right now. Please try again later.');
       });
