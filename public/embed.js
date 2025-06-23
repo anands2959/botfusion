@@ -156,6 +156,7 @@
     .botfusion-chat-input input {
       flex: 1;
       padding: 10px 15px;
+      color: #424242;
       border: 1px solid #ddd;
       border-radius: 20px;
       outline: none;
