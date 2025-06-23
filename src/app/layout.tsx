@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import AuthContext from '@/context/AuthContext';
+import ChatbotScript from './ChatbotScript';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const poppins = Poppins({
@@ -27,6 +28,8 @@ export default function RootLayout({
         <AuthContext>
           {children}
         </AuthContext>
+        <ChatbotScript />
+
       </body>
     </html>
   );

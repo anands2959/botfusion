@@ -132,6 +132,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
                 const completion = await openai.chat.completions.create({
                   model: 'gpt-3.5-turbo',
+                  // model: 'gpt-4o',
                   messages: [
                     { role: 'system', content: prompt.split('\n\nQuestion:')[0] },
                     { role: 'user', content: `Content: ${relevantContent}\n\nQuestion: ${message}` }

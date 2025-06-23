@@ -149,6 +149,7 @@
     }
     .botfusion-chat-input {
       padding: 15px;
+      color: #424242;
       border-top: 1px solid #eaeaea;
       display: flex;
       gap: 10px;
