@@ -24,9 +24,8 @@ export default function AIModelSettings() {
   const [selectedModel, setSelectedModel] = useState<string>('chatgpt-pro');
   const [apiKeys, setApiKeys] = useState({
     openai: '',
-    anthropic: '',
     google: '',
-    deepseek: ''
+    openrouter: ''
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,18 +69,10 @@ export default function AIModelSettings() {
       apiKeyRequired: true
     },
     {
-      id: 'deepseek-pro',
-      name: 'DeepSeek Chat',
-      provider: 'deepseek',
-      description: 'DeepSeek Chat AI with advanced web search and knowledge retrieval capabilities',
-      apiKeyRequired: true
-    },
-
-    {
-      id: 'claude-pro',
-      name: 'Anthropic Claude',
-      provider: 'anthropic',
-      description: 'Anthropic\'s Claude AI model with advanced reasoning capabilities',
+      id: 'openrouter-pro',
+      name: 'OpenRouter DeepSeek R1',
+      provider: 'openrouter',
+      description: 'DeepSeek R1 0528 (free) via OpenRouter with advanced reasoning capabilities',
       apiKeyRequired: true
     }
   ];
@@ -111,9 +102,8 @@ export default function AIModelSettings() {
           setSelectedModel(data.settings.defaultAIModel || 'chatgpt-pro');
           setApiKeys({
             openai: data.settings.openaiApiKey || '',
-            anthropic: data.settings.anthropicApiKey || '',
             google: data.settings.googleApiKey || '',
-            deepseek: data.settings.deepseekApiKey || ''
+            openrouter: data.settings.openrouterApiKey || ''
           });
         }
       } catch (err) {
@@ -198,9 +188,8 @@ export default function AIModelSettings() {
         body: JSON.stringify({
           defaultAIModel: selectedModel,
           openaiApiKey: apiKeys.openai,
-          anthropicApiKey: apiKeys.anthropic,
           googleApiKey: apiKeys.google,
-          deepseekApiKey: apiKeys.deepseek
+          openrouterApiKey: apiKeys.openrouter
         })
       });
 
@@ -645,29 +634,16 @@ export default function AIModelSettings() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="deepseek-key" className="block text-sm font-medium text-gray-700 mb-1">
-                      DeepSeek API Key
+                    <label htmlFor="openrouter-key" className="block text-sm font-medium text-gray-700 mb-1">
+                      OpenRouter API Key (for DeepSeek R1 model)
                     </label>
                     <input
                       type="password"
-                      id="deepseek-key"
-                      value={apiKeys.deepseek}
-                      onChange={(e) => handleApiKeyChange('deepseek', e.target.value)}
+                      id="openrouter-key"
+                      value={apiKeys.openrouter}
+                      onChange={(e) => handleApiKeyChange('openrouter', e.target.value)}
                       className="w-full text-gray-700 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="..."
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="anthropic-key" className="block text-sm font-medium text-gray-700 mb-1">
-                      Anthropic API Key (for Claude model)
-                    </label>
-                    <input
-                      type="password"
-                      id="anthropic-key"
-                      value={apiKeys.anthropic}
-                      onChange={(e) => handleApiKeyChange('anthropic', e.target.value)}
-                      className="w-full text-gray-700 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="sk-ant-..."
+                      placeholder="sk_or_..."
                     />
                   </div>
                 </div>

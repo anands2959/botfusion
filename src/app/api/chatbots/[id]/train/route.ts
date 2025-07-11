@@ -161,15 +161,21 @@ async function processWebsiteTraining(trainingSourceId: string, url: string) {
       if (selectedModel === 'chatgpt-free' || selectedModel === 'chatgpt-pro') {
         apiKey = settings?.openaiApiKey || '';
         provider = 'openai';
-      } else if (selectedModel === 'claude-free' || selectedModel === 'claude-pro') {
-        apiKey = settings?.anthropicApiKey || '';
-        provider = 'anthropic';
       } else if (selectedModel === 'gemini-free' || selectedModel === 'gemini-pro') {
         apiKey = settings?.googleApiKey || '';
         provider = 'google';
-      } else if (selectedModel === 'deepseek-free' || selectedModel === 'deepseek-pro') {
-        apiKey = settings?.deepseekApiKey || '';
-        provider = 'deepseek';
+      } else if (selectedModel === 'openrouter-pro') {
+        // For OpenRouter, we need to use OpenAI API key for embeddings since OpenRouter doesn't support embeddings
+        // If OpenAI API key is available, use it; otherwise fall back to OpenRouter key
+        if (settings?.openaiApiKey) {
+          apiKey = settings.openaiApiKey;
+          provider = 'openai'; // Use OpenAI provider for embeddings
+          console.log('Using OpenAI API key for embeddings with OpenRouter model');
+        } else {
+          apiKey = settings?.openrouterApiKey || '';
+          provider = 'openrouter'; // This will use the fallback in vector-db.ts
+          console.log('Using OpenRouter API key for embeddings (will use fallback)');
+        }
       }
 
       // Check if API key is available
