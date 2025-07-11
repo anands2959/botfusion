@@ -55,16 +55,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const modelApiKeys = {
       'chatgpt-free': user.settings.openaiApiKey,
       'chatgpt-pro': user.settings.openaiApiKey,
-      'claude-free': user.settings.anthropicApiKey,
-      'claude-pro': user.settings.anthropicApiKey,
       'gemini-free': user.settings.googleApiKey,
       'gemini-pro': user.settings.googleApiKey,
-      'deepseek-free': user.settings.deepseekApiKey,
-      'deepseek-pro': user.settings.deepseekApiKey,
+      'openrouter-pro': user.settings.openrouterApiKey,
     };
 
     const modelApiKey = modelApiKeys[selectedModel];
-    const provider = selectedModel.split('-')[0]; // 'chatgpt', 'gemini', etc.
+    let provider = selectedModel.split('-')[0]; // 'chatgpt', 'gemini', 'openrouter', etc.
+
+    // Special handling for OpenRouter - use OpenAI for embeddings if available
+    let embeddingApiKey = modelApiKey;
+    let embeddingProvider = provider;
+
+    if (provider === 'openrouter' && user.settings.openaiApiKey) {
+      // For embeddings with OpenRouter, use OpenAI if available
+      embeddingApiKey = user.settings.openaiApiKey;
+      embeddingProvider = 'openai';
+      console.log('Using OpenAI API key for embeddings with OpenRouter model');
+    }
 
     if (!modelApiKey) {
       return NextResponse.json(
@@ -90,7 +98,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         response = 'Goodbye! Reach out anytime you need assistance.';
       } else {
         try {
-          const searchResults = await searchSimilarContent(message, chatbot.id, provider, modelApiKey);
+          const searchResults = await searchSimilarContent(message, chatbot.id, embeddingProvider, embeddingApiKey);
           console.log('Search results:', searchResults.map(r => ({ similarity: r.similarity, contentPreview: r.content.substring(0, 50) })));
 
           if (searchResults.length > 0) {
@@ -126,6 +134,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                   generationConfig: { temperature: 0.7, maxOutputTokens: 500 },
                 });
                 response = result.response.text().trim();
+              } else if (provider === 'openrouter') {
+                const OpenAI = (await import('openai')).OpenAI;
+                const openai = new OpenAI({
+                  baseURL: "https://openrouter.ai/api/v1",
+                  apiKey: modelApiKey
+                });
+
+                const completion = await openai.chat.completions.create({
+                  model: "deepseek/deepseek-r1-0528", // Or add ":free" if needed
+                  messages: [
+                    { role: 'system', content: prompt.split('\n\nQuestion:')[0] },
+                    { role: 'user', content: `Content: ${relevantContent}\n\nQuestion: ${message}` }
+                  ],
+                  temperature: 0.7,
+                  max_tokens: 500,
+                  headers: {
+                    "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://botfusion-ten.vercel.app/",
+                    "X-Title": "BotFusion"
+                  }
+                });
+                response = completion.choices[0].message.content.trim();
               } else {
                 const OpenAI = (await import('openai')).OpenAI;
                 const openai = new OpenAI({ apiKey: modelApiKey });

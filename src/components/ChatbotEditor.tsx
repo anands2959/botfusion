@@ -28,12 +28,15 @@ export default function ChatbotEditor() {
   const [name, setName] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [colorScheme, setColorScheme] = useState('#3B82F6'); // Default blue
+  const [customColor, setCustomColor] = useState('');
+  const [isCustomColor, setIsCustomColor] = useState(false);
   const [widgetPosition, setWidgetPosition] = useState<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'>('bottom-right');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const welcomeMessageRef = useRef<HTMLTextAreaElement>(null);
   
   // Color scheme options
   const colorOptions = [
@@ -77,7 +80,18 @@ export default function ChatbotEditor() {
     setSelectedChatbot(chatbot);
     setName(chatbot.name);
     setWelcomeMessage(chatbot.welcomeMessage);
-    setColorScheme(chatbot.colorScheme);
+    
+    // Check if the color is one of the predefined options or custom
+    const isPresetColor = colorOptions.some(option => option.value === chatbot.colorScheme);
+    if (isPresetColor) {
+      setColorScheme(chatbot.colorScheme);
+      setIsCustomColor(false);
+    } else {
+      setCustomColor(chatbot.colorScheme);
+      setColorScheme('');
+      setIsCustomColor(true);
+    }
+    
     setWidgetPosition(chatbot.widgetPosition);
     setLogoPreview(chatbot.logoUrl.startsWith('mongodb-image-') 
     ? `/uploads/${chatbot.userId}/${chatbot.logoUrl}` 
@@ -91,6 +105,8 @@ export default function ChatbotEditor() {
     setName('');
     setWelcomeMessage('Hi there! How can I help you today?');
     setColorScheme('#3B82F6');
+    setCustomColor('');
+    setIsCustomColor(false);
     setWidgetPosition('bottom-right');
     setLogoPreview(null);
     setLogoFile(null);
@@ -129,7 +145,7 @@ export default function ChatbotEditor() {
       const formData = new FormData();
       formData.append('name', name);
       formData.append('welcomeMessage', welcomeMessage);
-      formData.append('colorScheme', colorScheme);
+      formData.append('colorScheme', isCustomColor ? customColor : colorScheme);
       formData.append('widgetPosition', widgetPosition);
       
       if (logoFile) {
@@ -211,8 +227,37 @@ export default function ChatbotEditor() {
     }
   };
 
+  // Function to format message with line breaks and markdown-like formatting
+  const formatMessage = (message: string) => {
+    if (!message) return '';
+    
+    // Replace line breaks with <br> tags
+    let formatted = message.replace(/\n/g, '<br>');
+    
+    // Replace markdown-style formatting
+    // Bold: **text** -> <strong>text</strong>
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Italic: *text* -> <em>text</em> (but not if it's part of **text**)
+    // Using a more compatible approach without lookbehind/lookahead
+    formatted = formatted.replace(/\b\*([^\*\n]+)\*\b/g, '<em>$1</em>');
+    
+    // Underline: __text__ -> <u>text</u>
+    formatted = formatted.replace(/__(.*?)__/g, '<u>$1</u>');
+    
+    // Bullet points: * item -> • item (with proper spacing)
+    // Process each line separately to handle bullet points correctly
+    formatted = formatted.split('<br>').map(line => {
+      // Convert bullet points at the beginning of lines
+      return line.replace(/^\s*\*\s(.+)$/, '• $1');
+    }).join('<br>');
+    
+    // Return as HTML
+    return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
+  };
+
   return (
-    <div className="bg-white rounded-lg p-4">
+    <div className="bg-white rounded-lg">
       {/* <h2 className="text-xl font-semibold text-gray-900 mb-6">Chatbot Editor</h2> */}
       
       {/* Error and success messages */}
@@ -328,15 +373,69 @@ export default function ChatbotEditor() {
                   <label htmlFor="welcome-message" className="block text-sm font-medium text-gray-700">
                     Welcome Message
                   </label>
-                  <textarea
-                    id="welcome-message"
-                    value={welcomeMessage}
-                    onChange={(e) => setWelcomeMessage(e.target.value || 'Hi there! How can I help you today?')}
-                    rows={3}
-                    className="mt-1 resize-none block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Hi there! How can I help you today?"
-                    required
-                  />
+                  <div className="mt-1 relative">
+                    <textarea
+                      id="welcome-message"
+                      ref={welcomeMessageRef}
+                      value={welcomeMessage}
+                      onChange={(e) => setWelcomeMessage(e.target.value || 'Hi there! How can I help you today?')}
+                      rows={5}
+                      className="resize-none block text-gray-700 w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Hi there! How can I help you today?"
+                      required
+                    />
+                    <div className="absolute right-2 bottom-2 flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = welcomeMessageRef.current;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const value = textarea.value;
+                            const newValue = value.substring(0, start) + '\n' + value.substring(end);
+                            setWelcomeMessage(newValue);
+                            // Set cursor position after the inserted line break
+                            setTimeout(() => {
+                              textarea.selectionStart = textarea.selectionEnd = start + 1;
+                              textarea.focus();
+                            }, 0);
+                          }
+                        }}
+                        className="p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        title="Insert line break"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = welcomeMessageRef.current;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const value = textarea.value;
+                            const newValue = value.substring(0, start) + '\n\n' + value.substring(end);
+                            setWelcomeMessage(newValue);
+                            // Set cursor position after the inserted paragraph break
+                            setTimeout(() => {
+                              textarea.selectionStart = textarea.selectionEnd = start + 2;
+                              textarea.focus();
+                            }, 0);
+                          }
+                        }}
+                        className="p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        title="Insert paragraph break"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Use the buttons to add line breaks or paragraph spacing</p>
                 </div>
                 
                 <div>
@@ -378,7 +477,7 @@ export default function ChatbotEditor() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Color Scheme
                   </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-4">
                     {colorOptions.map((color) => (
                       <div key={color.value} className="relative">
                         <input
@@ -386,13 +485,16 @@ export default function ChatbotEditor() {
                           id={`color-${color.value}`}
                           name="colorScheme"
                           value={color.value}
-                          checked={colorScheme === color.value}
-                          onChange={() => setColorScheme(color.value)}
-                          className="sr-only"
+                          checked={!isCustomColor && colorScheme === color.value}
+                          onChange={() => {
+                            setColorScheme(color.value);
+                            setIsCustomColor(false);
+                          }}
+                          className="sr-only text-gray-700"
                         />
                         <label
                           htmlFor={`color-${color.value}`}
-                          className={`block w-full p-2 border rounded-md cursor-pointer focus:outline-none ${colorScheme === color.value ? 'ring-2 ring-offset-2 ring-blue-500' : 'border-gray-200'}`}
+                          className={`block w-full p-2 border rounded-md cursor-pointer focus:outline-none ${!isCustomColor && colorScheme === color.value ? 'ring-2 ring-offset-2 ring-blue-500' : 'border-gray-200'}`}
                         >
                           <span className="flex items-center justify-center">
                             <span 
@@ -404,7 +506,62 @@ export default function ChatbotEditor() {
                         </label>
                       </div>
                     ))}
+                    <div className="relative">
+                      <input
+                        type="radio"
+                        id="color-custom"
+                        name="colorScheme"
+                        checked={isCustomColor}
+                        onChange={() => {
+                          setIsCustomColor(true);
+                          if (!customColor) setCustomColor('#000000');
+                        }}
+                        className="sr-only "
+                      />
+                      <label
+                        htmlFor="color-custom"
+                        className={`block w-full p-2 border rounded-md cursor-pointer focus:outline-none ${isCustomColor ? 'ring-2 ring-offset-2 ring-blue-500' : 'border-gray-200'}`}
+                      >
+                        <span className="flex items-center justify-center">
+                          <span 
+                            className="h-8 w-8 rounded-full border border-gray-200 overflow-hidden" 
+                            style={{ backgroundColor: customColor || '#FFFFFF' }}
+                          >
+                            {!customColor && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                              </svg>
+                            )}
+                          </span>
+                        </span>
+                        <span className="block text-gray-700 text-xs text-center mt-1">Custom</span>
+                      </label>
+                    </div>
                   </div>
+                  
+                  {isCustomColor && (
+                    <div className=" flex items-center space-x-3">
+                      <div>
+                        <label htmlFor="custom-color" className="sr-only">Custom Color</label>
+                        <input
+                          type="color"
+                          id="custom-color"
+                          value={customColor || '#000000'}
+                          onChange={(e) => setCustomColor(e.target.value)}
+                          className="h-10 w-10 border-0 rounded-md cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={customColor || ''}
+                          onChange={(e) => setCustomColor(e.target.value)}
+                          placeholder="#RRGGBB"
+                          className="block w-full text-gray-700 border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div>
@@ -498,7 +655,7 @@ export default function ChatbotEditor() {
                       'top-right': 'top-4 right-4',
                       'top-left': 'top-4 left-4'
                     }[widgetPosition]}`}
-                    style={{ backgroundColor: colorScheme }}
+                    style={{ backgroundColor: isCustomColor ? customColor : colorScheme }}
                   >
                     {logoPreview ? (
                       <img src={logoPreview} alt="Chatbot logo" className="h-8 w-8 rounded-full object-cover" />
@@ -527,7 +684,7 @@ export default function ChatbotEditor() {
                     }[widgetPosition]}`}
                   >
                     {/* Chat header */}
-                    <div className="p-4" style={{ backgroundColor: colorScheme }}>
+                    <div className="p-4" style={{ backgroundColor: isCustomColor ? customColor : colorScheme }}>
                       <div className="flex items-center">
                         {logoPreview ? (
                           <img src={logoPreview} alt="Chatbot logo" className="h-8 w-8 rounded-full mr-3 object-cover" />
@@ -549,7 +706,7 @@ export default function ChatbotEditor() {
                           {logoPreview ? (
                             <img src={logoPreview} alt="Chatbot logo" className="h-8 w-8 rounded-full object-cover" />
                           ) : (
-                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: colorScheme }}>
+                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: isCustomColor ? customColor : colorScheme }}>
                               <svg className="h-8 w-8 text-white p-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                               </svg>
@@ -557,7 +714,9 @@ export default function ChatbotEditor() {
                           )}
                         </div>
                         <div className="bg-white p-3 rounded-lg shadow-sm max-w-[80%]">
-                          <p className="text-sm text-gray-800">{welcomeMessage || 'Hi there! How can I help you today?'}</p>
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                            {formatMessage(welcomeMessage || 'Hi there! How can I help you today?')}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -574,7 +733,7 @@ export default function ChatbotEditor() {
                         <button
                           type="button"
                           className="ml-3 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white"
-                          style={{ backgroundColor: colorScheme }}
+                          style={{ backgroundColor: isCustomColor ? customColor : colorScheme }}
                           disabled
                         >
                            <svg className="h-5 w-3 rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">

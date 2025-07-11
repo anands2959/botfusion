@@ -77,9 +77,8 @@ model Settings {
   userId            String  @unique @db.ObjectId
   defaultAIModel    String?
   openaiApiKey      String?
-  anthropicApiKey   String?
   googleApiKey      String?
-  deepseekApiKey    String?
+  openrouterApiKey  String?
   phone             String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

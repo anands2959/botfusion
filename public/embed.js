@@ -128,6 +128,8 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      white-space: normal;
+      word-wrap: break-word;
     }
     .botfusion-message {
       max-width: 80%;
@@ -135,6 +137,23 @@
       border-radius: 18px;
       font-size: 14px;
       line-height: 1.4;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+    .botfusion-message p {
+      margin: 0 0 8px 0;
+    }
+    .botfusion-message p:last-child {
+      margin-bottom: 0;
+    }
+    .botfusion-message strong {
+      font-weight: bold;
+    }
+    .botfusion-message em {
+      font-style: italic;
+    }
+    .botfusion-message u {
+      text-decoration: underline;
     }
     .botfusion-message.bot {
       align-self: flex-start;
@@ -339,6 +358,9 @@
       } else {
         addMessage('bot', 'Hello! How can I help you today?');
       }
+      
+      // Ensure the chat messages container has proper styling for formatted content
+      chatMessages.style.whiteSpace = 'normal';
     })
     .catch(error => {
       console.error('BotFusion:', error);
@@ -370,9 +392,50 @@
   function addMessage(sender, text) {
     const message = document.createElement('div');
     message.className = `botfusion-message ${sender}`;
-    message.textContent = text;
+    
+    // Format the message to handle line breaks and markdown-style formatting
+    const formattedText = formatMessage(text);
+    message.innerHTML = formattedText;
+    
     chatMessages.appendChild(message);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  
+  function formatMessage(text) {
+    if (!text) return '';
+    
+    // Handle double line breaks as paragraph breaks
+    let formatted = text.replace(/\n\n+/g, '</p><p>');
+    
+    // Replace single line breaks with <br> tags
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!formatted.startsWith('<p>')) {
+      formatted = '<p>' + formatted + '</p>';
+    }
+    
+    // Replace markdown-style formatting
+    // Bold: **text** -> <strong>text</strong>
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Italic: *text* -> <em>text</em>
+    formatted = formatted.replace(/\b\*((?!\*)[^\n]+)\*\b/g, '<em>$1</em>');
+    
+    // Underline: __text__ -> <u>text</u>
+    formatted = formatted.replace(/__(.*?)__/g, '<u>$1</u>');
+    
+    // Process bullet points
+    formatted = formatted.split('<br>').map(line => {
+      // Convert bullet points at the beginning of lines
+      // Only convert if it's not already part of a bold/italic formatting
+      if (line.match(/^\s*\*\s/) && !line.match(/\*\*/) && !line.match(/\*[^\s].*\*/)) {
+        return line.replace(/^\s*\*\s(.+)$/, '• $1');
+      }
+      return line;
+    }).join('<br>');
+    
+    return formatted;
   }
 
   function showTypingIndicator() {
