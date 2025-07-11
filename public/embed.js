@@ -209,6 +209,13 @@
       margin-bottom: 10px;
       color: #666;
     }
+      .botfusion-chat-close{
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 20px;
+        color: #fff;
+      }
     .botfusion-dot {
       width: 8px;
       height: 8px;
@@ -306,19 +313,19 @@
         buttonIcon.src = data.logoUrl.startsWith('mongodb-image-')
           ? `${BOTFUSION_URL}/api/uploads/${data.userId}/${data.logoUrl}`
           : data.logoUrl;
-        
+
         // Add error handling for logo image
-        buttonIcon.onerror = function() {
+        buttonIcon.onerror = function () {
           console.error('Failed to load logo image:', buttonIcon.src);
           // Fallback to default icon
           buttonIcon.src = `${BOTFUSION_URL}/chat-icon.png`;
         };
-        
+
         const headerLogo = chat.querySelector('.botfusion-chat-header-title img');
         headerLogo.src = buttonIcon.src;
-        
+
         // Add error handling for header logo image
-        headerLogo.onerror = function() {
+        headerLogo.onerror = function () {
           console.error('Failed to load header logo image:', headerLogo.src);
           // Fallback to default icon
           headerLogo.src = `${BOTFUSION_URL}/chat-icon.png`;
@@ -358,7 +365,7 @@
       } else {
         addMessage('bot', 'Hello! How can I help you today?');
       }
-      
+
       // Ensure the chat messages container has proper styling for formatted content
       chatMessages.style.whiteSpace = 'normal';
     })
@@ -392,39 +399,39 @@
   function addMessage(sender, text) {
     const message = document.createElement('div');
     message.className = `botfusion-message ${sender}`;
-    
+
     // Format the message to handle line breaks and markdown-style formatting
     const formattedText = formatMessage(text);
     message.innerHTML = formattedText;
-    
+
     chatMessages.appendChild(message);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
-  
+
   function formatMessage(text) {
     if (!text) return '';
-    
+
     // Handle double line breaks as paragraph breaks
     let formatted = text.replace(/\n\n+/g, '</p><p>');
-    
+
     // Replace single line breaks with <br> tags
     formatted = formatted.replace(/\n/g, '<br>');
-    
+
     // Wrap in paragraph tags if not already wrapped
     if (!formatted.startsWith('<p>')) {
       formatted = '<p>' + formatted + '</p>';
     }
-    
+
     // Replace markdown-style formatting
     // Bold: **text** -> <strong>text</strong>
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
+
     // Italic: *text* -> <em>text</em>
     formatted = formatted.replace(/\b\*((?!\*)[^\n]+)\*\b/g, '<em>$1</em>');
-    
+
     // Underline: __text__ -> <u>text</u>
     formatted = formatted.replace(/__(.*?)__/g, '<u>$1</u>');
-    
+
     // Process bullet points
     formatted = formatted.split('<br>').map(line => {
       // Convert bullet points at the beginning of lines
@@ -434,7 +441,7 @@
       }
       return line;
     }).join('<br>');
-    
+
     return formatted;
   }
 
