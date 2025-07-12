@@ -751,7 +751,7 @@ export default function Dashboard() {
                 <div className="flex items-center mb-4">
                   <div className="w-20 h-20 rounded-full bg-blue-100/80 flex items-center justify-center text-blue-600 text-2xl font-bold mr-4">
                     <Image
-                      src="/developer.jpg"
+                      src="/developer.png"
                       alt="Anand Sharma"
                       width={100}
                       height={100}

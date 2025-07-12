@@ -90,7 +90,7 @@ function ForgotPasswordSteps() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send reset email');
+        throw new Error(data.error || 'Failed to send OTP');
       }
 
       setUserId(data.userId);
@@ -269,7 +269,7 @@ function ForgotPasswordSteps() {
               disabled={isLoading}
               className="flex w-full justify-center rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 py-3 px-4 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 ease-in-out transform hover:translate-y-[-1px] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
+              {isLoading ? 'Sending...' : 'Send OTP'}
             </button>
           </div>
         </form>
