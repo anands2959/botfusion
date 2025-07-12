@@ -12,6 +12,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify transporter connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('SMTP connection error:', error);
+  } else {
+    console.log('SMTP server is ready to take our messages');
+  }
+});
+
 // Generate a random 6-digit OTP code
 export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -110,5 +119,34 @@ export async function sendPasswordResetEmail(email: string, otp: string) {
     `,
   };
 
+  return transporter.sendMail(mailOptions);
+}
+
+// Send contact form email
+export async function sendContactFormEmail(name: string, email: string, subject: string, message: string) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: process.env.CONTACT_EMAIL || process.env.EMAIL_FROM, // Send to contact email or fall back to sender email
+    replyTo: email, // Set reply-to as the sender's email
+    subject: `Contact Form: ${subject}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">New Contact Form Submission</h2>
+        <p><strong>From:</strong> ${name} (${email})</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 24px 0;">
+          <p style="white-space: pre-wrap;">${message}</p>
+        </div>
+        <p>This message was sent from the BotFusion contact form.</p>
+      </div>
+    `,
+  };
+
+  console.log('Sending contact form email with options:', {
+    from: mailOptions.from,
+    to: mailOptions.to,
+    subject: mailOptions.subject
+  });
+  
   return transporter.sendMail(mailOptions);
 }
