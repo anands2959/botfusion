@@ -52,9 +52,10 @@
       transform: scale(1.05);
     }
     .botfusion-button img {
-      width: 35px;
-      height: 35px;
+      width: 50px;
+      height: 50px;
       object-fit: contain;
+      border-radius:50px;
     }
     .botfusion-chat {
       position: absolute;
@@ -105,9 +106,10 @@
       gap: 10px;
     }
     .botfusion-chat-header-title img {
-      width: 24px;
-      height: 24px;
+      width: 35px;
+      height: 35px;
       object-fit: contain;
+      border-radius: 50px;
     }
     .botfusion-chat-header-title h3 {
       margin: 0;
