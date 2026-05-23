@@ -115,9 +115,7 @@ export default function ContactPage() {
                       <div className="ml-4">
                         <h3 className="text-lg font-medium text-gray-900">Location</h3>
                         <p className="mt-1 text-gray-600">
-                          Grasim Industires ltd.<br />
-                          Colony Renukoot<br />
-                          Sonebhadra, UP 231217
+                          Remotly Available
                         </p>
                       </div>
                     </div>
